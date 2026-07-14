@@ -179,71 +179,83 @@
       '<div class="skills">' + skills + more + '</div></a>';
   }
 
+  // People view — honeycomb of all 46 people (16 mentors clustered in the
+  // center, 30 participants around them). Dummy data until wired to backend.
+
+  var HIVE_ROWS = [7, 6, 7, 6, 7, 6, 7]; // 46 cells
+  var MENTOR_COUNT = 16;
+
+  var DUMMY_NAMES = [
+    'Aisha Rahman', 'Ben Carter', 'Chloe Nakamura', 'Daniel Osei', 'Elena Petrova',
+    'Farhan Iqbal', 'Grace Lin', 'Hugo Martins', 'Isla Thompson', 'Jae-won Kim',
+    'Kavya Nair', "Liam O'Connor", 'Maya Fernando', 'Nikolai Volkov', 'Olivia Bennett',
+    'Priya Sharma', 'Quentin Dubois', 'Rosa Alvarez', 'Samir Haddad', 'Tara Wickramasinghe',
+    'Umar Farouk', 'Vera Kowalski', 'Wei Zhang', 'Ximena Torres', 'Yuki Tanaka',
+    'Zainab Ali', 'Arun Perera', 'Bianca Rossi', 'Callum Fraser', 'Devi Kumari',
+    'Emil Johansson', 'Fatima Zahra', 'George Mwangi', 'Hana Suzuki', 'Ivan Horvat',
+    'Jasmine Lee', 'Kofi Mensah', 'Lara Novak', 'Marco Silva', 'Nadia Hussain',
+    'Owen Walsh', 'Pia Lindgren', 'Rafael Mendes', 'Sofia Papadopoulos', 'Tomás Herrera',
+    'Uma Raghavan',
+  ];
+
+  function hiveCells() {
+    // Cell centers in hex-width units; y rows are 0.866 apart (pointy-top).
+    var cells = [];
+    HIVE_ROWS.forEach(function (count, r) {
+      for (var i = 0; i < count; i++) {
+        cells.push({ x: i - (count - 1) / 2, y: r * 0.866, row: r });
+      }
+    });
+    // The MENTOR_COUNT cells nearest the grid center become mentor tiles.
+    var cy = 0.866 * (HIVE_ROWS.length - 1) / 2;
+    var byDist = cells.map(function (c, idx) {
+      return { idx: idx, d: Math.sqrt(c.x * c.x + (c.y - cy) * (c.y - cy)) };
+    }).sort(function (a, b) { return a.d - b.d; });
+    var mentorIdx = {};
+    byDist.slice(0, MENTOR_COUNT).forEach(function (e) { mentorIdx[e.idx] = true; });
+    cells.forEach(function (c, idx) { c.mentor = !!mentorIdx[idx]; });
+    return cells;
+  }
+
   function viewHome() {
-    var d = state.data;
-    if (!d) return skeletons();
-    var users = d.users || [];
-    var mentors = users.filter(function (u) { return u.role === 'mentor'; });
-    var participants = users.filter(function (u) { return u.role !== 'mentor'; });
+    var cells = hiveCells();
+    var person = 0;
+    var rowsHtml = '';
+    var cellNo = 0;
+    HIVE_ROWS.forEach(function (count) {
+      var hexes = '';
+      for (var i = 0; i < count; i++, cellNo++) {
+        var c = cells[cellNo];
+        var name = DUMMY_NAMES[person % DUMMY_NAMES.length];
+        var img = 'https://i.pravatar.cc/220?img=' + ((person % 70) + 1);
+        person++;
+        hexes += '<div class="hex ' + (c.mentor ? 'mentor' : 'participant') + '" title="' + esc(name) + (c.mentor ? ' · Mentor' : '') + '">' +
+          '<div class="hex-in"><img src="' + img + '" alt="" loading="lazy">' +
+          '<span class="hex-name">' + esc(name) + '</span></div></div>';
+      }
+      rowsHtml += '<div class="hive-row">' + hexes + '</div>';
+    });
 
-    // search + filters
-    var q = state.q.toLowerCase();
-    function match(u) {
-      if (state.skillFilter && (u.skills || []).map(function(s){return s.toLowerCase();}).indexOf(state.skillFilter.toLowerCase()) === -1) return false;
-      if (!q) return true;
-      var hay = [u.name, u.affiliation, u.expertise, u.bio, (u.skills || []).join(' ')].join(' ').toLowerCase();
-      return hay.indexOf(q) !== -1;
-    }
-    var fMentors = mentors.filter(match);
-    var fParticipants = participants.filter(match);
+    return '<div class="people-page">' +
+      '<div class="people-head"><h2>People</h2>' +
+      '<div class="legend"><span><span class="dot mentor"></span>' + MENTOR_COUNT + ' mentors</span>' +
+      '<span><span class="dot participant"></span>30 participants</span></div></div>' +
+      '<div class="hive-wrap" id="hiveWrap"><div class="hive" id="hive">' + rowsHtml + '</div></div>' +
+      '</div>';
+  }
 
-    // top skills for filter chips
-    var counts = {};
-    users.forEach(function (u) { (u.skills || []).forEach(function (s) { counts[s] = (counts[s] || 0) + 1; }); });
-    var topSkills = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 10);
-
-    var hero =
-      '<section class="hero">' +
-      '<span class="hero-kicker"><i class="fa-solid fa-bolt"></i>' + esc(C.EVENT_TAGLINE) + '</span>' +
-      '<h1>Build the future,<br><span class="grad">together.</span></h1>' +
-      '<p>Meet the ' + esc(C.EVENT_NAME) + ' community — find mentors, discover collaborators, and form your team.</p>' +
-      '<div class="hero-cta">' +
-      (!signedIn()
-        ? '<button class="btn btn-gradient" data-action="sign-in"><i class="fa-brands fa-google"></i>Sign in with Google</button>' +
-          '<a class="btn btn-outline" href="#/teams">Browse teams</a>'
-        : (me()
-            ? '<a class="btn btn-gradient" href="#/teams"><i class="fa-solid fa-people-group"></i>Find a team</a>' +
-              '<a class="btn btn-outline" href="#/profile/' + esc(me().id) + '">My profile</a>'
-            : '<a class="btn btn-gradient" href="#/register"><i class="fa-solid fa-user-plus"></i>Complete registration</a>')) +
-      '</div>' +
-      '<div class="hero-stats">' +
-      '<div class="stat"><b>' + participants.length + '</b><span>Participants</span></div>' +
-      '<div class="stat"><b>' + mentors.length + '</b><span>Mentors</span></div>' +
-      '<div class="stat"><b>' + (d.teams || []).length + '</b><span>Teams</span></div>' +
-      '</div></section>';
-
-    var toolbar =
-      '<div class="toolbar">' +
-      '<label class="search"><i class="fa-solid fa-magnifying-glass"></i>' +
-      '<input id="searchInput" placeholder="Search people, skills, affiliations…" value="' + esc(state.q) + '"></label>' +
-      '<div class="filter-chips">' + topSkills.map(function (s) {
-        return skillChip(s, state.skillFilter === s);
-      }).join('') + '</div></div>';
-
-    var regNotice = (!d.registrationOpen)
-      ? '<div class="notice"><i class="fa-solid fa-circle-info"></i>Registration is currently closed. Signed-in participants can still browse and collaborate.</div>'
-      : '';
-
-    var mentorsHtml = fMentors.length
-      ? '<div class="grid grid-people">' + fMentors.map(personCard).join('') + '</div>'
-      : '<div class="empty"><i class="fa-regular fa-face-smile"></i>No mentors match your search.</div>';
-    var partsHtml = fParticipants.length
-      ? '<div class="grid grid-people">' + fParticipants.map(personCard).join('') + '</div>'
-      : '<div class="empty"><i class="fa-regular fa-face-smile"></i>No participants match your search.</div>';
-
-    return hero + regNotice + toolbar +
-      '<section class="section"><div class="section-head"><h2>Mentors</h2><span class="sub">' + fMentors.length + ' of ' + mentors.length + '</span></div>' + mentorsHtml + '</section>' +
-      '<section class="section"><div class="section-head"><h2>Participants</h2><span class="sub">' + fParticipants.length + ' of ' + participants.length + '</span></div>' + partsHtml + '</section>';
+  // Size the hexes so the whole hive fits the available area with no scroll.
+  function fitHive() {
+    var wrap = $('#hiveWrap');
+    var hive = $('#hive');
+    if (!wrap || !hive) return;
+    var gap = 7;
+    var cols = Math.max.apply(null, HIVE_ROWS);
+    var n = HIVE_ROWS.length;
+    var wFit = (wrap.clientWidth - (cols - 1) * gap) / cols;
+    var hFit = ((wrap.clientHeight - (n - 1) * gap * 0.87) / (1 + 0.75 * (n - 1))) / 1.1547;
+    var hw = Math.max(40, Math.floor(Math.min(wFit, hFit)));
+    hive.style.setProperty('--hw', hw + 'px');
   }
 
   function skeletons() {
@@ -641,17 +653,8 @@
   }
 
   function wireViewExtras(hash, m) {
-    // search box keeps focus-friendly listener
-    var si = $('#searchInput');
-    if (si) {
-      si.addEventListener('input', function () {
-        state.q = si.value;
-        // re-render only sections below hero to keep typing smooth
-        route(); // simple approach; input is recreated — restore focus:
-        var si2 = $('#searchInput');
-        if (si2) { si2.focus(); si2.setSelectionRange(si2.value.length, si2.value.length); }
-      }, { once: true });
-    }
+    // people hive: size hexes to the viewport once laid out
+    if ($('#hiveWrap')) requestAnimationFrame(fitHive);
     // message polling
     if (/^#\/messages/.test(hash)) {
       state.pollTimer = setInterval(function () {
@@ -952,15 +955,10 @@
     }
   });
 
-  // mobile menu
-  $('#menuToggle').addEventListener('click', function () {
-    $('#nav').classList.toggle('open');
-  });
-  $('#nav').addEventListener('click', function () { $('#nav').classList.remove('open'); });
-
   // ------------------------------------------------------------------ boot
 
   window.addEventListener('hashchange', route);
+  window.addEventListener('resize', fitHive);
 
   (function boot() {
     var justSignedIn = A.absorbLoginToken();

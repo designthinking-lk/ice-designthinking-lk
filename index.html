@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="container topbar-inner">
+  <div class="shell">
+    <aside class="sidebar">
       <a class="brand" href="#/">
         <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-name">ICE<span class="brand-year">2026</span></span>
@@ -39,29 +39,13 @@
           <i class="fa-solid fa-message"></i><span>Messages</span><b class="badge" id="unreadBadge" hidden></b>
         </a>
       </nav>
-      <div class="topbar-actions" id="topbarActions">
+      <div class="sidebar-actions" id="topbarActions">
         <!-- filled by app.js: sign-in button or avatar menu -->
       </div>
-      <button class="menu-toggle" id="menuToggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
-    </div>
-  </header>
+    </aside>
 
-  <main id="view" class="container view"></main>
-
-  <footer class="footer">
-    <div class="container footer-inner">
-      <div>
-        <span class="footer-brand">ICE2026</span>
-        <span class="footer-sep">·</span>
-        <a href="https://ahlab.org" target="_blank" rel="noopener">Augmented Human Lab</a>
-      </div>
-      <div class="footer-links">
-        <a href="#/announcements">Announcements</a>
-        <a href="#/teams">Teams</a>
-        <a href="mailto:info@ahlab.org"><i class="fa-regular fa-envelope"></i> Contact</a>
-      </div>
-    </div>
-  </footer>
+    <main id="view" class="view"></main>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <div id="modalRoot"></div>
