@@ -271,8 +271,10 @@
       minX = Math.min(minX, cell.x); maxX = Math.max(maxX, cell.x + w);
       minY = Math.min(minY, cell.y); maxY = Math.max(maxY, cell.y + w);
     });
-    word.style.width = (maxX - minX) + 'px';
-    word.style.height = (maxY - minY) + 'px';
+    // Natural (unscaled) dimensions; fitWordmark scales from these and sets the
+    // layout box to the scaled size so flexbox can centre it at any width.
+    word.__w = maxX - minX;
+    word.__h = maxY - minY;
     word.innerHTML = '';
 
     // map each assigned user onto a spread-out cell
@@ -341,11 +343,17 @@
   // Scale the whole wordmark so it fits the stage with no scrolling.
   function fitWordmark() {
     var stage = $('#hiveStage'), word = $('#word');
-    if (!stage || !word || !word.style.width) return;
-    var ww = parseFloat(word.style.width), wh = parseFloat(word.style.height);
+    if (!stage || !word || !word.__w) return;
+    var ww = word.__w, wh = word.__h;
     var pad = 48;
     var s = Math.min((stage.clientWidth - pad) / ww, (stage.clientHeight - pad) / wh, 1.5);
-    if (s > 0 && isFinite(s)) word.style.transform = 'scale(' + s + ')';
+    if (!(s > 0) || !isFinite(s)) return;
+    // Scale from the top-left and shrink the layout box to the scaled size, so the
+    // flexbox-centred stage keeps equal margins whether the sidebar is open or not.
+    word.style.transformOrigin = 'top left';
+    word.style.transform = 'scale(' + s + ')';
+    word.style.width = (ww * s) + 'px';
+    word.style.height = (wh * s) + 'px';
   }
 
   function skeletons() {
