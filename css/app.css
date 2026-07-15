@@ -245,7 +245,13 @@ textarea.input { resize: vertical; min-height: 90px; }
 .form-actions { display: flex; gap: 12px; align-items: center; }
 .form-status { font-size: 14px; color: #b3261e; min-height: 20px; }
 .form-status.ok { color: #1a7f37; }
-.profile-edit { max-width: 640px; margin: 4px auto 0; padding-bottom: 40px; }
+.profile-edit { max-width: 1060px; margin: 4px auto 0; padding-bottom: 24px; }
+.pf-grid {
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 40px; max-width: none; align-items: start;
+}
+.pf-left .idcard-scene { margin-top: 0; }
+.pf-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .form-loading {
   display: flex; align-items: center; gap: 12px; color: var(--text-muted);
   padding: 60px 0; font-size: 15px;
@@ -320,6 +326,13 @@ textarea.input { resize: vertical; min-height: 90px; }
 /* filled + not focused → looks like plain printed text (inline-edit feel) */
 .cinput:not(:placeholder-shown):not(:focus) {
   background: transparent; border-color: transparent; padding-left: 0;
+}
+/* keep browser autofill from painting a white box + dark text on the card */
+.cinput:-webkit-autofill,
+.cinput:-webkit-autofill:hover,
+.cinput:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff; caret-color: #fff;
+  transition: background-color 100000s ease 0s;
 }
 .cname { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
 .cfield { display: flex; align-items: center; gap: 8px; }
@@ -488,4 +501,6 @@ table.admin tr:last-child td { border-bottom: none; }
 @media (max-width: 860px) {
   .detail-grid, .msg-layout { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
+  .pf-grid { grid-template-columns: 1fr; gap: 24px; }
+  .profile-edit { max-width: 620px; }
 }

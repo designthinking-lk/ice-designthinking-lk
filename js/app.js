@@ -650,8 +650,9 @@
     var skills = (u.skills || []);
     var vid = ytId(u.video || '');
 
-    return '<form class="form" id="profileForm" data-new="' + (isNew ? '1' : '') + '">' +
+    return '<form class="form pf-grid" id="profileForm" data-new="' + (isNew ? '1' : '') + '">' +
 
+      '<div class="pf-left">' +
       '<div class="idcard-scene"><div class="idcard" id="idcard">' +
 
       // ---------------- front
@@ -690,8 +691,9 @@
       '</div></div>' +
       '<input type="hidden" name="image" value="' + esc(u.image || '') + '">' +
       '<input type="file" id="photoFile" accept="image/*" hidden>' +
+      '</div>' + // .pf-left
 
-      '<div class="form-row">' +
+      '<div class="pf-right">' +
       '<div class="field"><label>Gender <span class="hint">optional, organizers only</span></label><select class="input" name="gender">' +
       [''].concat(genders).map(function (g) {
         return '<option value="' + esc(g) + '"' + (u.gender === g ? ' selected' : '') + '>' + (esc(g) || '—') + '</option>';
@@ -699,7 +701,6 @@
       '<div class="field"><label>Intro video <span class="hint">YouTube, optional</span></label>' +
       '<div class="yt-card" id="ytCard">' + ytCardHtml(u.video || '') + '</div>' +
       '<input type="hidden" name="video" value="' + (vid ? 'https://youtu.be/' + esc(vid) : '') + '"></div>' +
-      '</div>' +
 
       '<div class="field"><label>Skills</label><div class="tag-input" id="skillTags" data-action="focus-tags">' +
       skills.map(tagChip).join('') +
@@ -708,6 +709,7 @@
 
       '<div class="form-status" id="profileStatus"></div>' +
       '<div class="form-actions"><button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Join ' + esc(C.EVENT_NAME) : 'Save changes') + '</span><span class="spin"></span></button></div>' +
+      '</div>' + // .pf-right
       '</form>';
   }
 
