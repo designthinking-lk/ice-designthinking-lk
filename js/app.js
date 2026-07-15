@@ -448,31 +448,264 @@
 
   // ------------------------------------------------------ register / edit
 
+  /** Form select/suggestion options — fetched from the Google Sheet via
+   *  bootstrap ("options" tab); config lists are only the offline fallback. */
+  function opts(category, fallback) {
+    var o = state.data && state.data.options;
+    return (o && o[category] && o[category].length) ? o[category] : fallback;
+  }
+  function formReady() { return !!(state.data && state.data.options); }
+  function formLoading() {
+    return '<div class="form-loading"><span class="spin"></span>Preparing the form…</div>';
+  }
+
+  // ---- photo editor (drag to adjust, scroll/pinch to zoom) ----
+  // State model: (cx, cy) = natural-image point at the viewport center,
+  // s = displayed px per natural px. Baked to a 512px square on submit.
+  var photoEd = null;
+
+  function photoLoad(file) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      var vp = $('#photoVp');
+      if (!vp) return;
+      photoEd = {
+        img: img, iw: img.naturalWidth, ih: img.naturalHeight,
+        cx: img.naturalWidth / 2, cy: img.naturalHeight / 2, s: 0, minS: 0,
+      };
+      vp.innerHTML = '<img id="photoImg" src="' + url + '" alt="" draggable="false">' +
+        '<button type="button" class="photo-change" data-action="photo-pick" title="Change photo"><i class="fa-solid fa-camera"></i></button>';
+      photoEd.minS = vp.clientWidth / Math.min(photoEd.iw, photoEd.ih);
+      photoEd.s = photoEd.minS;
+      photoPaint();
+      wirePhotoGestures(vp);
+      var hint = $('#photoHint');
+      if (hint) hint.hidden = false;
+    };
+    img.src = url;
+  }
+
+  function photoClamp() {
+    var vp = $('#photoVp');
+    if (!vp || !photoEd) return;
+    var V = vp.clientWidth, e = photoEd;
+    e.s = Math.max(e.minS, Math.min(e.minS * 8, e.s));
+    var half = V / (2 * e.s);
+    e.cx = Math.max(half, Math.min(e.iw - half, e.cx));
+    e.cy = Math.max(half, Math.min(e.ih - half, e.cy));
+  }
+
+  function photoPaint() {
+    var vp = $('#photoVp'), img = $('#photoImg');
+    if (!vp || !img || !photoEd) return;
+    photoClamp();
+    var V = vp.clientWidth, e = photoEd;
+    img.style.maxWidth = 'none';
+    img.style.width = (e.iw * e.s) + 'px';
+    img.style.left = (V / 2 - e.cx * e.s) + 'px';
+    img.style.top = (V / 2 - e.cy * e.s) + 'px';
+  }
+
+  function wirePhotoGestures(vp) {
+    var pts = {}, lastDist = 0;
+    vp.addEventListener('pointerdown', function (ev) {
+      if (!photoEd || ev.target.closest('[data-action]')) return;
+      ev.preventDefault();
+      vp.setPointerCapture(ev.pointerId);
+      pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+      lastDist = 0;
+    });
+    vp.addEventListener('pointermove', function (ev) {
+      if (!photoEd || !pts[ev.pointerId]) return;
+      var ids = Object.keys(pts);
+      if (ids.length === 1) {           // one finger / mouse: pan
+        var p = pts[ev.pointerId];
+        photoEd.cx -= (ev.clientX - p.x) / photoEd.s;
+        photoEd.cy -= (ev.clientY - p.y) / photoEd.s;
+        p.x = ev.clientX; p.y = ev.clientY;
+        photoPaint();
+      } else if (ids.length === 2) {    // two fingers: pinch zoom
+        pts[ev.pointerId].x = ev.clientX; pts[ev.pointerId].y = ev.clientY;
+        var a = pts[ids[0]], b = pts[ids[1]];
+        var d = Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+        if (lastDist) { photoEd.s *= d / lastDist; photoPaint(); }
+        lastDist = d;
+      }
+    });
+    function up(ev) { delete pts[ev.pointerId]; lastDist = 0; }
+    vp.addEventListener('pointerup', up);
+    vp.addEventListener('pointercancel', up);
+    vp.addEventListener('wheel', function (ev) {
+      if (!photoEd) return;
+      ev.preventDefault();
+      photoEd.s *= Math.exp(-ev.deltaY * 0.0015);
+      photoPaint();
+    }, { passive: false });
+  }
+
+  function photoBake() {
+    var vp = $('#photoVp');
+    photoClamp();
+    var V = vp.clientWidth, e = photoEd;
+    var win = V / e.s; // visible window size in natural px
+    var canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 512;
+    canvas.getContext('2d').drawImage(e.img, e.cx - win / 2, e.cy - win / 2, win, win, 0, 0, 512, 512);
+    return canvas.toDataURL('image/jpeg', 0.88);
+  }
+
+  // ---- youtube intro video ----
+
+  function ytId(url) {
+    var m = String(url || '').match(/(?:youtube\.com\/(?:watch\?[^#\s]*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function ytCardHtml(url) {
+    var id = ytId(url);
+    if (!id) {
+      return '<div class="yt-empty"><i class="fa-brands fa-youtube"></i>' +
+        '<input id="ytInput" placeholder="Paste a YouTube link" value="' + esc(url || '') + '"></div>';
+    }
+    return '<div class="yt-preview">' +
+      '<img class="yt-thumb" src="https://i.ytimg.com/vi/' + esc(id) + '/hqdefault.jpg" alt="">' +
+      '<div class="yt-info"><div class="yt-title" id="ytTitle">YouTube video</div>' +
+      '<input class="yt-url" value="https://youtu.be/' + esc(id) + '" readonly onclick="this.select()"></div>' +
+      '<button type="button" class="yt-remove" data-action="yt-remove" title="Remove video"><i class="fa-solid fa-xmark"></i></button>' +
+      '</div>';
+  }
+
+  function ytRender(url) {
+    var box = $('#ytCard');
+    if (!box) return;
+    var id = ytId(url);
+    var hid = $('#profileForm [name="video"]');
+    if (hid) hid.value = id ? 'https://youtu.be/' + id : '';
+    box.innerHTML = ytCardHtml(url);
+    wireYt();
+    if (id) {
+      fetch('https://noembed.com/embed?url=' + encodeURIComponent('https://youtu.be/' + id))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var el = $('#ytTitle');
+          if (el && d && d.title) el.textContent = d.title;
+        })
+        .catch(function () { /* thumbnail alone is fine */ });
+    }
+  }
+
+  function wireYt() {
+    var input = $('#ytInput');
+    if (input) {
+      input.addEventListener('input', function () {
+        if (ytId(input.value)) ytRender(input.value);
+      });
+    }
+  }
+
+  // ---- validation ----
+
+  function normUrl(v) {
+    v = String(v || '').trim();
+    if (!v) return '';
+    if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+    return v;
+  }
+
+  function validateProfile(form) {
+    var fd = new FormData(form);
+    if (!String(fd.get('name') || '').trim()) return 'Please enter your name.';
+    var linkRules = [
+      ['linkGithub', /(^|\.)github\.com$/i, 'GitHub'],
+      ['linkWebsite', null, 'Website'],
+      ['linkLinkedin', /(^|\.)linkedin\.com$/i, 'LinkedIn'],
+    ];
+    for (var i = 0; i < linkRules.length; i++) {
+      var v = normUrl(fd.get(linkRules[i][0]));
+      if (!v) continue;
+      var host = '';
+      try { host = new URL(v).hostname; } catch (e) { /* invalid */ }
+      if (!host || host.indexOf('.') === -1) return linkRules[i][2] + ' link is not a valid URL.';
+      if (linkRules[i][1] && !linkRules[i][1].test(host)) {
+        return linkRules[i][2] + ' link should point to ' + linkRules[i][2].toLowerCase() + '.com.';
+      }
+    }
+    var ytIn = $('#ytInput');
+    if (ytIn && ytIn.value.trim() && !ytId(ytIn.value)) return 'That does not look like a YouTube link.';
+    return null;
+  }
+
   function profileForm(u, isNew) {
     u = u || {};
+    // split stored links into the three card fields by hostname
+    var lg = '', lw = '', ll = '';
+    (u.links || []).forEach(function (l) {
+      var s = String(l);
+      if (/github\.com/i.test(s) && !lg) lg = s;
+      else if (/linkedin\.com/i.test(s) && !ll) ll = s;
+      else if (!lw) lw = s;
+    });
+    var genders = opts('gender', ['Female', 'Male', 'Non-binary', 'Prefer not to say']);
     var skills = (u.skills || []);
+    var vid = ytId(u.video || '');
+
     return '<form class="form" id="profileForm" data-new="' + (isNew ? '1' : '') + '">' +
-      '<div class="field"><label>Full name</label><input class="input" name="name" required maxlength="100" value="' + esc(u.name || '') + '"></div>' +
-      '<div class="field"><label>Photo</label><div class="photo-edit">' +
+
+      '<div class="idcard-scene"><div class="idcard" id="idcard">' +
+
+      // ---------------- front
+      '<div class="idface idfront">' +
+      '<div class="idcard-head"><span class="idcard-brand">ICE<b>2026</b></span>' +
+      '<span class="idcard-type">' + (u.role === 'mentor' ? 'MENTOR' : 'MEMBER') + '</span></div>' +
+      '<div class="idcard-main">' +
+      '<div class="idcard-photo"><div class="photo-vp" id="photoVp">' +
+      (u.image
+        ? '<img class="photo-static" src="' + esc(u.image) + '" alt="">'
+        : '<div class="photo-empty" data-action="photo-pick"><i class="fa-solid fa-camera"></i><span>Add photo</span></div>') +
+      '<button type="button" class="photo-change" data-action="photo-pick" title="Change photo"><i class="fa-solid fa-camera"></i></button>' +
+      '</div><span class="photo-hint" id="photoHint"' + (u.image ? '' : ' hidden') + '>drag to adjust · scroll to zoom</span></div>' +
+      '<div class="idcard-fields">' +
+      '<input class="cinput cname" name="name" required maxlength="100" placeholder="Full name" value="' + esc(u.name || '') + '">' +
+      '<label class="cfield"><i class="fa-solid fa-building"></i><input class="cinput" name="affiliation" maxlength="120" placeholder="Affiliation — university, company" value="' + esc(u.affiliation || '') + '"></label>' +
+      '<label class="cfield"><i class="fa-solid fa-lightbulb"></i><input class="cinput" name="expertise" maxlength="160" placeholder="Expertise — comma separated topics" value="' + esc(u.expertise || '') + '"></label>' +
+      '</div></div>' +
+      '<div class="idcard-foot"><span class="idcard-url">ice2026.designthinking.lk</span>' +
+      '<button type="button" class="flip-btn" data-action="flip-card"><i class="fa-solid fa-rotate"></i><span>More on the back</span></button></div>' +
+      '</div>' +
+
+      // ---------------- back
+      '<div class="idface idback">' +
+      '<div class="idband"></div>' +
+      '<textarea class="cinput cbio" name="bio" maxlength="400" placeholder="Short bio — who you are, what excites you">' + esc(u.bio || '') + '</textarea>' +
+      '<div class="idlinks">' +
+      '<label class="cfield"><i class="fa-brands fa-github"></i><input class="cinput" name="linkGithub" maxlength="200" placeholder="github.com/you" value="' + esc(lg) + '"></label>' +
+      '<label class="cfield"><i class="fa-solid fa-globe"></i><input class="cinput" name="linkWebsite" maxlength="200" placeholder="yourwebsite.com" value="' + esc(lw) + '"></label>' +
+      '<label class="cfield"><i class="fa-brands fa-linkedin-in"></i><input class="cinput" name="linkLinkedin" maxlength="200" placeholder="linkedin.com/in/you" value="' + esc(ll) + '"></label>' +
+      '</div>' +
+      '<div class="idcard-foot"><span class="idcard-url">' + esc(C.EVENT_TAGLINE) + '</span>' +
+      '<button type="button" class="flip-btn" data-action="flip-card"><i class="fa-solid fa-rotate"></i><span>Front</span></button></div>' +
+      '</div>' +
+
+      '</div></div>' +
       '<input type="hidden" name="image" value="' + esc(u.image || '') + '">' +
-      '<img id="photoPreview" src="' + esc(u.image || '') + '" alt="" class="avatar avatar-lg" style="' + (u.image ? '' : 'display:none') + '">' +
-      '<button type="button" class="btn btn-outline btn-sm" data-action="pick-image" data-target="image" data-preview="photoPreview"><i class="fa-regular fa-image"></i><span class="label">Upload photo</span><span class="spin"></span></button>' +
-      '<span class="hint">Square works best. Resized automatically.</span></div></div>' +
+      '<input type="file" id="photoFile" accept="image/*" hidden>' +
+
       '<div class="form-row">' +
-      '<div class="field"><label>Affiliation <span class="hint">university, company…</span></label><input class="input" name="affiliation" maxlength="200" value="' + esc(u.affiliation || '') + '"></div>' +
       '<div class="field"><label>Gender <span class="hint">optional, organizers only</span></label><select class="input" name="gender">' +
-      ['', 'Female', 'Male', 'Non-binary', 'Prefer not to say'].map(function (g) {
-        return '<option value="' + esc(g) + '"' + (u.gender === g ? ' selected' : '') + '>' + (g || '—') + '</option>';
-      }).join('') + '</select></div></div>' +
-      '<div class="field"><label>Short bio</label><textarea class="input" name="bio" maxlength="2000" rows="4" placeholder="Tell everyone who you are and what excites you.">' + esc(u.bio || '') + '</textarea></div>' +
-      '<div class="field"><label>Expertise areas <span class="hint">comma separated topics</span></label><input class="input" name="expertise" maxlength="500" value="' + esc(u.expertise || '') + '"></div>' +
+      [''].concat(genders).map(function (g) {
+        return '<option value="' + esc(g) + '"' + (u.gender === g ? ' selected' : '') + '>' + (esc(g) || '—') + '</option>';
+      }).join('') + '</select></div>' +
+      '<div class="field"><label>Intro video <span class="hint">YouTube, optional</span></label>' +
+      '<div class="yt-card" id="ytCard">' + ytCardHtml(u.video || '') + '</div>' +
+      '<input type="hidden" name="video" value="' + (vid ? 'https://youtu.be/' + esc(vid) : '') + '"></div>' +
+      '</div>' +
+
       '<div class="field"><label>Skills</label><div class="tag-input" id="skillTags" data-action="focus-tags">' +
       skills.map(tagChip).join('') +
       '<input id="skillInput" placeholder="Type a skill and press Enter"></div>' +
       '<div class="suggestions" id="skillSuggestions"></div></div>' +
-      '<div class="field"><label>Links <span class="hint">one per line — portfolio, LinkedIn, GitHub…</span></label>' +
-      '<textarea class="input" name="links" rows="3" placeholder="https://…">' + esc((u.links || []).join('\n')) + '</textarea></div>' +
-      '<div class="field"><label>Intro video URL <span class="hint">optional</span></label><input class="input" name="video" maxlength="300" value="' + esc(u.video || '') + '"></div>' +
+
       '<div class="form-status" id="profileStatus"></div>' +
       '<div class="form-actions"><button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Join ' + esc(C.EVENT_NAME) : 'Save changes') + '</span><span class="spin"></span></button></div>' +
       '</form>';
@@ -487,7 +720,7 @@
     if (!box) return;
     var existing = getTagValues();
     var pool = {};
-    C.SKILL_SUGGESTIONS.forEach(function (s) { pool[s] = 1; });
+    opts('skill', C.SKILL_SUGGESTIONS).forEach(function (s) { pool[s] = 1; });
     ((state.data && state.data.users) || []).forEach(function (u) { (u.skills || []).forEach(function (s) { pool[s] = 1; }); });
     var items = Object.keys(pool).filter(function (s) {
       return existing.map(function(x){return x.toLowerCase();}).indexOf(s.toLowerCase()) === -1;
@@ -519,17 +752,35 @@
     if (state.data && !state.data.registrationOpen) {
       return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-door-closed"></i>Registration is closed. Contact the organizers if you believe this is a mistake.</div>';
     }
-    setTimeout(renderSkillSuggestions, 0);
-    return '<div style="max-width:640px;margin:20px auto 0"><h1 style="font-size:30px">Welcome to ' + esc(C.EVENT_NAME) + '</h1>' +
-      '<p style="color:var(--text-body)">Set up your public profile so mentors and other participants can find you.</p>' +
-      profileForm(null, true) + '</div>';
+    if (!formReady()) return profileScaffold('Welcome to ' + esc(C.EVENT_NAME),
+      'Set up your public profile so mentors and other participants can find you.', formLoading());
+    setTimeout(afterProfileForm, 0);
+    return profileScaffold('Welcome to ' + esc(C.EVENT_NAME),
+      'Set up your public profile so mentors and other participants can find you.',
+      profileForm(null, true));
   }
 
   function viewMe() {
     if (!signedIn() || !me()) { location.hash = signedIn() ? '#/register' : '#/'; return ''; }
-    setTimeout(renderSkillSuggestions, 0);
-    return '<div style="max-width:640px;margin:20px auto 0"><h1 style="font-size:30px">Edit profile</h1>' +
-      profileForm(me(), false) + '</div>';
+    if (!formReady()) return profileScaffold('Edit profile', '', formLoading());
+    setTimeout(afterProfileForm, 0);
+    return profileScaffold('Edit profile', '', profileForm(me(), false));
+  }
+
+  function profileScaffold(title, sub, inner) {
+    return '<div class="profile-edit"><h1 style="font-size:30px">' + title + '</h1>' +
+      (sub ? '<p style="color:var(--text-body)">' + sub + '</p>' : '') + inner + '</div>';
+  }
+
+  function afterProfileForm() {
+    photoEd = null; // fresh form; only set when the user picks a new photo
+    renderSkillSuggestions();
+    var vid = $('#profileForm [name="video"]');
+    if (vid && vid.value) ytRender(vid.value); else wireYt();
+    var file = $('#photoFile');
+    if (file) file.addEventListener('change', function () {
+      if (file.files && file.files[0]) photoLoad(file.files[0]);
+    });
   }
 
   // ----------------------------------------------------------------- admin
@@ -654,6 +905,13 @@
 
   function collectProfile(form) {
     var fd = new FormData(form);
+    var links = [
+      normUrl(fd.get('linkGithub')),
+      normUrl(fd.get('linkWebsite')),
+      normUrl(fd.get('linkLinkedin')),
+    ].filter(Boolean);
+    var ytIn = $('#ytInput');
+    var video = fd.get('video') || (ytIn && ytId(ytIn.value) ? 'https://youtu.be/' + ytId(ytIn.value) : '');
     return {
       name: fd.get('name'),
       image: fd.get('image'),
@@ -662,8 +920,8 @@
       bio: fd.get('bio'),
       expertise: fd.get('expertise'),
       skills: getTagValues(),
-      links: String(fd.get('links') || '').split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean),
-      video: fd.get('video'),
+      links: links,
+      video: video,
     };
   }
 
@@ -775,6 +1033,14 @@
         break;
       }
       case 'pick-image': pickImage(t); break;
+      case 'photo-pick': { var pf = $('#photoFile'); if (pf) pf.click(); break; }
+      case 'flip-card': { var card = $('#idcard'); if (card) card.classList.toggle('flipped'); break; }
+      case 'yt-remove': {
+        var hid = $('#profileForm [name="video"]');
+        if (hid) hid.value = '';
+        ytRender('');
+        break;
+      }
       case 'add-tag': addTag(t.getAttribute('data-skill')); break;
       case 'rm-tag': t.closest('.chip').remove(); renderSkillSuggestions(); break;
       case 'focus-tags': { var si3 = $('#skillInput'); if (si3 && e.target === t) si3.focus(); break; }
@@ -807,12 +1073,22 @@
 
     if (form.id === 'profileForm') {
       var status = $('#profileStatus');
+      status.className = 'form-status';
       status.textContent = '';
+      var invalid = validateProfile(form);
+      if (invalid) { status.textContent = invalid; return; }
       busy(btn, true);
       try {
+        // if the user picked a new photo, bake the cropped square & upload it
+        if (photoEd) {
+          var dataUrl = photoBake();
+          var up = await A.api('upload_image', { data: dataUrl, filename: 'profile' });
+          form.querySelector('[name="image"]').value = up.url;
+        }
         var payload = collectProfile(form);
         var isNew = form.getAttribute('data-new') === '1';
         await A.api(isNew ? 'register' : 'update_profile', payload);
+        photoEd = null;
         await refresh();
         toast(isNew ? 'Welcome aboard' : 'Profile saved');
         location.hash = '#/profile/' + (me() ? me().id : '');
