@@ -336,9 +336,11 @@ textarea.input { resize: vertical; min-height: 90px; }
   padding: 6px 13px; font-size: 12px; font-weight: 600; font-family: inherit;
 }
 .flip-btn:hover { background: rgba(255,255,255,0.28); }
-.idband { height: 34px; margin: 6px -22px 16px; background: rgba(0,0,0,0.55); flex: none; }
-.cbio { min-height: 76px; resize: none; font-size: 13px; line-height: 1.5; }
-.idlinks { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.idback { gap: 14px; }
+.idband { height: 34px; margin: 6px -22px 2px; background: rgba(0,0,0,0.55); flex: none; }
+.cbio { flex: 1; min-height: 92px; resize: none; overflow: hidden; font-size: 13px; line-height: 1.55; }
+.cbio:focus { overflow: auto; }
+.idlinks { display: flex; flex-direction: column; gap: 10px; flex: none; }
 
 /* ------------------------------------------------------------ youtube card */
 .yt-card { border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; background: #fff; }

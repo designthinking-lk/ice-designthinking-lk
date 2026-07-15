@@ -667,8 +667,8 @@
       '</div><span class="photo-hint" id="photoHint"' + (u.image ? '' : ' hidden') + '>drag to adjust · scroll to zoom</span></div>' +
       '<div class="idcard-fields">' +
       '<input class="cinput cname" name="name" required maxlength="100" placeholder="Full name" value="' + esc(u.name || '') + '">' +
-      '<label class="cfield"><i class="fa-solid fa-building"></i><input class="cinput" name="affiliation" maxlength="120" placeholder="Affiliation — university, company" value="' + esc(u.affiliation || '') + '"></label>' +
-      '<label class="cfield"><i class="fa-solid fa-lightbulb"></i><input class="cinput" name="expertise" maxlength="160" placeholder="Expertise — comma separated topics" value="' + esc(u.expertise || '') + '"></label>' +
+      '<label class="cfield"><i class="fa-solid fa-building"></i><input class="cinput" name="affiliation" maxlength="70" placeholder="Affiliation — university, company" value="' + esc(u.affiliation || '') + '"></label>' +
+      '<label class="cfield"><i class="fa-solid fa-lightbulb"></i><input class="cinput" name="expertise" maxlength="90" placeholder="Expertise — comma separated topics" value="' + esc(u.expertise || '') + '"></label>' +
       '</div></div>' +
       '<div class="idcard-foot"><span class="idcard-url">ice2026.designthinking.lk</span>' +
       '<button type="button" class="flip-btn" data-action="flip-card"><i class="fa-solid fa-rotate"></i><span>More on the back</span></button></div>' +
@@ -677,7 +677,7 @@
       // ---------------- back
       '<div class="idface idback">' +
       '<div class="idband"></div>' +
-      '<textarea class="cinput cbio" name="bio" maxlength="400" placeholder="Short bio — who you are, what excites you">' + esc(u.bio || '') + '</textarea>' +
+      '<textarea class="cinput cbio" name="bio" maxlength="260" placeholder="Short bio — who you are, what excites you">' + esc(u.bio || '') + '</textarea>' +
       '<div class="idlinks">' +
       '<label class="cfield"><i class="fa-brands fa-github"></i><input class="cinput" name="linkGithub" maxlength="200" placeholder="github.com/you" value="' + esc(lg) + '"></label>' +
       '<label class="cfield"><i class="fa-solid fa-globe"></i><input class="cinput" name="linkWebsite" maxlength="200" placeholder="yourwebsite.com" value="' + esc(lw) + '"></label>' +
@@ -781,6 +781,16 @@
     if (file) file.addEventListener('change', function () {
       if (file.files && file.files[0]) photoLoad(file.files[0]);
     });
+    // Card fields print onto a physical card: keep them single-paragraph so
+    // the unfocused (printed) view never needs to scroll.
+    var bio = $('#profileForm [name="bio"]');
+    if (bio) {
+      bio.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+      bio.addEventListener('input', function () {
+        var flat = bio.value.replace(/\s*\n+\s*/g, ' ');
+        if (flat !== bio.value) bio.value = flat;
+      });
+    }
   }
 
   // ----------------------------------------------------------------- admin
