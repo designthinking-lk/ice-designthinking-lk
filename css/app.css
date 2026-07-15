@@ -28,7 +28,7 @@ button { font-family: inherit; }
 .topbar {
   flex: none; display: flex; align-items: center; justify-content: flex-end;
   gap: 10px; min-height: 60px; padding: 12px 24px;
-  border-bottom: 1px solid var(--border); background: #fff;
+  background: #fff;
 }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 
@@ -40,7 +40,7 @@ button { font-family: inherit; }
   background: #fff; border-right: 1px solid var(--border);
   transition: width 0.18s ease;
 }
-.sidebar.expanded { width: 212px; gap: 26px; padding: 14px 14px 20px; }
+.sidebar.expanded { width: 180px; gap: 26px; padding: 14px 14px 20px; }
 
 .sidebar-toggle {
   display: flex; align-items: center; justify-content: center;
@@ -572,11 +572,17 @@ table.admin tr:last-child td { border-bottom: none; }
 .oct.m .oct-in::after { background: var(--accent); }
 .oct.p .oct-in::after { background: var(--accent2); }
 
-/* placeholder slot — an empty octagon, waiting to be filled */
+/* placeholder slot — an empty octagon outline, waiting to be filled.
+   The shape (all 8 sides) is drawn as a ring: a filled octagon in the outline
+   colour, with a slightly smaller page-coloured octagon punched out via ::before. */
 .oct.empty { cursor: default; }
-.oct.empty .oct-in { background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.oct.empty .oct-in { background: var(--border-strong); box-shadow: none; }
+.oct.empty .oct-in::before {
+  content: ""; position: absolute; inset: 2px;
+  background: var(--bg); clip-path: var(--oct);
+}
 .oct.empty .oct-in::after { display: none; }
-.oct-slot { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.16); font-size: 24px; }
+.oct-slot { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 22px; }
 .oct.empty:hover { transform: none; }
 .word.focus .oct.empty { opacity: 0.4; filter: none; }
 

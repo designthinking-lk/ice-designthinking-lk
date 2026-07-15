@@ -1360,6 +1360,11 @@
       localStorage.setItem('ice2026.sidebar', expanded ? 'expanded' : 'collapsed');
       toggle.setAttribute('aria-label', expanded ? 'Collapse menu' : 'Expand menu');
     });
+    // The content area resizes when the sidebar expands/collapses; rebuild the
+    // wordmark once the width transition settles so it stays centred.
+    sidebar.addEventListener('transitionend', function (e) {
+      if (e.propertyName === 'width' && $('#word')) buildWordmark();
+    });
   })();
 
   (function boot() {
