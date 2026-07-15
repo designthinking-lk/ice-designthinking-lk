@@ -26,25 +26,32 @@
 </head>
 <body>
   <div class="shell">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Expand menu" title="Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
       <a class="brand" href="#/">
         <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-name">ICE<span class="brand-year">2026</span></span>
       </a>
       <nav class="nav" id="nav">
-        <a href="#/" data-nav="home"><i class="fa-solid fa-users"></i><span>People</span></a>
-        <a href="#/teams" data-nav="teams"><i class="fa-solid fa-people-group"></i><span>Teams</span></a>
-        <a href="#/announcements" data-nav="announcements"><i class="fa-solid fa-bullhorn"></i><span>News</span></a>
-        <a href="https://chat.google.com" target="_blank" rel="noopener" id="navMessages" hidden>
+        <a href="#/" data-nav="home" title="People"><i class="fa-solid fa-users"></i><span>People</span></a>
+        <a href="#/teams" data-nav="teams" title="Teams"><i class="fa-solid fa-people-group"></i><span>Teams</span></a>
+        <a href="#/announcements" data-nav="announcements" title="News"><i class="fa-solid fa-bullhorn"></i><span>News</span></a>
+        <a href="https://chat.google.com" target="_blank" rel="noopener" id="navMessages" title="Messages" hidden>
           <i class="fa-solid fa-message"></i><span>Messages</span><i class="fa-solid fa-arrow-up-right-from-square ext"></i>
         </a>
       </nav>
-      <div class="sidebar-actions" id="topbarActions">
-        <!-- filled by app.js: sign-in button or avatar menu -->
-      </div>
     </aside>
 
-    <main id="view" class="view"></main>
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-actions" id="topbarActions">
+          <!-- filled by app.js: sign-in button, register button + avatar menu -->
+        </div>
+      </header>
+      <main id="view" class="view"></main>
+    </div>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>

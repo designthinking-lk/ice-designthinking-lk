@@ -120,12 +120,14 @@
     if (signedIn() && d.me) {
       navMsg.hidden = false;
       actions.innerHTML =
-        '<button class="avatar-btn" data-action="user-menu">' + avatar(d.me, 'avatar-sm') +
-        '<span>' + esc(d.me.name.split(' ')[0]) + '</span><i class="fa-solid fa-chevron-down" style="font-size:10px;color:var(--text-faint)"></i></button>';
+        '<button class="avatar-circle-btn" data-action="user-menu" aria-label="Account" title="' + esc(d.me.name) + '">' +
+        avatar(d.me, 'avatar-sm') + '</button>';
     } else if (signedIn()) {
       navMsg.hidden = true;
-      actions.innerHTML = '<a class="btn btn-gradient btn-sm" href="#/register"><i class="fa-solid fa-user-plus"></i>Complete registration</a>' +
-        '<button class="btn btn-ghost btn-sm" data-action="sign-out">Sign out</button>';
+      actions.innerHTML =
+        '<a class="btn btn-gradient btn-sm" href="#/register"><i class="fa-solid fa-user-plus"></i>Complete registration</a>' +
+        '<button class="avatar-circle-btn" data-action="guest-menu" aria-label="Account" title="Account">' +
+        '<span class="avatar-guest"><i class="fa-solid fa-user"></i></span></button>';
     } else {
       navMsg.hidden = true;
       actions.innerHTML = '<button class="btn btn-primary btn-sm" data-action="sign-in"><i class="fa-brands fa-google"></i>Sign in</button>';
@@ -149,6 +151,13 @@
       (d.isAdmin ? '<a class="conv" href="#/admin" data-action="close-modal"><i class="fa-solid fa-shield-halved"></i> Admin</a>' : '') +
       '<a class="conv" href="#" data-action="sign-out"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</a>';
     modal('<h2>' + esc(d.me.name) + '</h2><div class="conv-list">' + items + '</div>');
+  }
+
+  function guestMenu() {
+    var items =
+      '<a class="conv" href="#/register" data-action="close-modal"><i class="fa-solid fa-user-plus"></i> Complete registration</a>' +
+      '<a class="conv" href="#" data-action="sign-out"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</a>';
+    modal('<h2>Account</h2><div class="conv-list">' + items + '</div>');
   }
 
   // ---------------------------------------------------------------- views
@@ -175,83 +184,134 @@
       '<div class="skills">' + skills + more + '</div></a>';
   }
 
-  // People view — honeycomb of all 46 people (16 mentors clustered in the
-  // center, 30 participants around them). Dummy data until wired to backend.
+  // People view — every participant & mentor rendered as an octagon tile,
+  // arranged to spell the ICE wordmark. Greyscale + duotone tint by role
+  // (mentors purple, participants cyan). Hovering a face dims the rest and
+  // shows a large preview in the hollow of the C. Clicking opens the profile.
 
-  var HIVE_ROWS = [7, 6, 7, 6, 7, 6, 7]; // 46 cells
-  var MENTOR_COUNT = 16;
-
-  var DUMMY_NAMES = [
-    'Aisha Rahman', 'Ben Carter', 'Chloe Nakamura', 'Daniel Osei', 'Elena Petrova',
-    'Farhan Iqbal', 'Grace Lin', 'Hugo Martins', 'Isla Thompson', 'Jae-won Kim',
-    'Kavya Nair', "Liam O'Connor", 'Maya Fernando', 'Nikolai Volkov', 'Olivia Bennett',
-    'Priya Sharma', 'Quentin Dubois', 'Rosa Alvarez', 'Samir Haddad', 'Tara Wickramasinghe',
-    'Umar Farouk', 'Vera Kowalski', 'Wei Zhang', 'Ximena Torres', 'Yuki Tanaka',
-    'Zainab Ali', 'Arun Perera', 'Bianca Rossi', 'Callum Fraser', 'Devi Kumari',
-    'Emil Johansson', 'Fatima Zahra', 'George Mwangi', 'Hana Suzuki', 'Ivan Horvat',
-    'Jasmine Lee', 'Kofi Mensah', 'Lara Novak', 'Marco Silva', 'Nadia Hussain',
-    'Owen Walsh', 'Pia Lindgren', 'Rafael Mendes', 'Sofia Papadopoulos', 'Tomás Herrera',
-    'Uma Raghavan',
+  var WORD_LETTERS = [
+    ['11111', '00100', '00100', '00100', '00100', '00100', '11111'], // I
+    ['11111', '10000', '10000', '10000', '10000', '10000', '11111'], // C
+    ['11111', '10000', '10000', '11110', '10000', '10000', '11111'], // E
   ];
+  var WORD_GAP = 1.4; // empty columns between letters
 
-  function hiveCells() {
-    // Cell centers in hex-width units; y rows are 0.866 apart (pointy-top).
-    var cells = [];
-    HIVE_ROWS.forEach(function (count, r) {
-      for (var i = 0; i < count; i++) {
-        cells.push({ x: i - (count - 1) / 2, y: r * 0.866, row: r });
+  // Build the ordered list of cells (grid col/row) plus the C-hollow centroid.
+  function wordCells() {
+    var cells = [], origins = [], cursor = 0;
+    WORD_LETTERS.forEach(function (L) {
+      origins.push(cursor);
+      var cols = L[0].length;
+      for (var r = 0; r < L.length; r++) {
+        for (var c = 0; c < cols; c++) {
+          if (L[r][c] === '1') cells.push({ r: r, c: cursor + c });
+        }
       }
+      cursor += cols + WORD_GAP;
     });
-    // The MENTOR_COUNT cells nearest the grid center become mentor tiles.
-    var cy = 0.866 * (HIVE_ROWS.length - 1) / 2;
-    var byDist = cells.map(function (c, idx) {
-      return { idx: idx, d: Math.sqrt(c.x * c.x + (c.y - cy) * (c.y - cy)) };
-    }).sort(function (a, b) { return a.d - b.d; });
-    var mentorIdx = {};
-    byDist.slice(0, MENTOR_COUNT).forEach(function (e) { mentorIdx[e.idx] = true; });
-    cells.forEach(function (c, idx) { c.mentor = !!mentorIdx[idx]; });
-    return cells;
+    var Cl = WORD_LETTERS[1], Co = origins[1], sc = 0, sr = 0, n = 0;
+    for (var rr = 0; rr < Cl.length; rr++) {
+      for (var cc = 0; cc < Cl[0].length; cc++) {
+        if (Cl[rr][cc] === '0') { sc += Co + cc; sr += rr; n++; }
+      }
+    }
+    return { cells: cells, hollow: { col: sc / n, row: sr / n } };
   }
 
   function viewHome() {
-    var cells = hiveCells();
-    var person = 0;
-    var rowsHtml = '';
-    var cellNo = 0;
-    HIVE_ROWS.forEach(function (count) {
-      var hexes = '';
-      for (var i = 0; i < count; i++, cellNo++) {
-        var c = cells[cellNo];
-        var name = DUMMY_NAMES[person % DUMMY_NAMES.length];
-        var img = 'https://i.pravatar.cc/220?img=' + ((person % 70) + 1);
-        person++;
-        hexes += '<div class="hex ' + (c.mentor ? 'mentor' : 'participant') + '" title="' + esc(name) + (c.mentor ? ' · Mentor' : '') + '">' +
-          '<div class="hex-in"><img src="' + img + '" alt="" loading="lazy">' +
-          '<span class="hex-name">' + esc(name) + '</span></div></div>';
-      }
-      rowsHtml += '<div class="hive-row">' + hexes + '</div>';
-    });
-
-    return '<div class="people-page">' +
-      '<div class="people-head"><h2>People</h2>' +
-      '<div class="legend"><span><span class="dot mentor"></span>' + MENTOR_COUNT + ' mentors</span>' +
-      '<span><span class="dot participant"></span>30 participants</span></div></div>' +
-      '<div class="hive-wrap" id="hiveWrap"><div class="hive" id="hive">' + rowsHtml + '</div></div>' +
+    var d = state.data;
+    if (!d) return skeletons();
+    var users = (d.users || []);
+    var mentors = users.filter(function (u) { return u.role === 'mentor'; }).length;
+    var participants = users.length - mentors;
+    return '<div class="hive">' +
+      '<div class="hive-legend">' +
+      '<span><span class="dot mentor"></span>' + mentors + ' mentor' + (mentors === 1 ? '' : 's') + '</span>' +
+      '<span><span class="dot participant"></span>' + participants + ' participant' + (participants === 1 ? '' : 's') + '</span>' +
+      '</div>' +
+      '<div class="hive-stage" id="hiveStage"><div class="word" id="word"></div></div>' +
+      (users.length ? '' : '<div class="hive-empty">No one has joined yet.</div>') +
       '</div>';
   }
 
-  // Size the hexes so the whole hive fits the available area with no scroll.
-  function fitHive() {
-    var wrap = $('#hiveWrap');
-    var hive = $('#hive');
-    if (!wrap || !hive) return;
-    var gap = 7;
-    var cols = Math.max.apply(null, HIVE_ROWS);
-    var n = HIVE_ROWS.length;
-    var wFit = (wrap.clientWidth - (cols - 1) * gap) / cols;
-    var hFit = ((wrap.clientHeight - (n - 1) * gap * 0.87) / (1 + 0.75 * (n - 1))) / 1.1547;
-    var hw = Math.max(40, Math.floor(Math.min(wFit, hFit)));
-    hive.style.setProperty('--hw', hw + 'px');
+  // Populate the wordmark tiles from live users, then size to fit (no scroll).
+  function buildWordmark() {
+    var word = $('#word');
+    if (!word) return;
+    var users = (state.data && state.data.users) || [];
+    if (!users.length) return;
+    var built = wordCells();
+    var cells = built.cells;
+    var w = 74, minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    cells.forEach(function (cell) {
+      cell.x = cell.c * w; cell.y = cell.r * w;
+      minX = Math.min(minX, cell.x); maxX = Math.max(maxX, cell.x + w);
+      minY = Math.min(minY, cell.y); maxY = Math.max(maxY, cell.y + w);
+    });
+    word.style.width = (maxX - minX) + 'px';
+    word.style.height = (maxY - minY) + 'px';
+    word.innerHTML = '';
+
+    cells.forEach(function (cell, i) {
+      var u = users[i % users.length];
+      var mentor = u.role === 'mentor';
+      var el = document.createElement('a');
+      el.className = 'oct ' + (mentor ? 'm' : 'p');
+      el.href = '#/profile/' + u.id;
+      el.style.width = w + 'px'; el.style.height = w + 'px';
+      el.style.left = (cell.x - minX) + 'px';
+      el.style.top = (cell.y - minY) + 'px';
+      el.title = u.name;
+      el.innerHTML = '<div class="oct-in">' +
+        (u.image ? '<img src="' + esc(u.image) + '" alt="" loading="lazy">' : '<span class="oct-blank">' + esc(initials(u.name)) + '</span>') +
+        '</div>';
+      el.addEventListener('mouseenter', function () { showHivePreview(u, mentor, el); });
+      el.addEventListener('mouseleave', hideHivePreview);
+      word.appendChild(el);
+    });
+
+    // preview parked in the C's hollow (regular octagon)
+    var pw = w * 2.9, ph = pw;
+    var preview = document.createElement('div');
+    preview.className = 'oct-preview';
+    preview.style.width = pw + 'px'; preview.style.height = ph + 'px';
+    preview.style.left = ((built.hollow.col + 0.5) * w - minX - pw / 2) + 'px';
+    preview.style.top = ((built.hollow.row + 0.5) * w - minY - ph / 2) + 'px';
+    preview.innerHTML = '<div class="oct-pin"><img id="hivePvImg" alt="">' +
+      '<span class="oct-pvname"><span id="hivePvNm"></span><span class="oct-pvrole" id="hivePvRole"></span></span></div>';
+    word.appendChild(preview);
+    word.__preview = preview;
+
+    fitWordmark();
+  }
+
+  function showHivePreview(u, mentor, el) {
+    var word = $('#word'); if (!word) return;
+    word.classList.add('focus');
+    if (word.__active) word.__active.classList.remove('active');
+    el.classList.add('active'); word.__active = el;
+    var img = $('#hivePvImg'), nm = $('#hivePvNm'), role = $('#hivePvRole');
+    if (img) img.src = u.image || '';
+    if (nm) nm.textContent = u.name;
+    if (role) role.textContent = mentor ? 'Mentor' : 'Participant';
+    var p = word.__preview;
+    if (p) { p.classList.remove('m', 'p'); p.classList.add(mentor ? 'm' : 'p', 'on'); }
+  }
+  function hideHivePreview() {
+    var word = $('#word'); if (!word) return;
+    word.classList.remove('focus');
+    if (word.__active) { word.__active.classList.remove('active'); word.__active = null; }
+    if (word.__preview) word.__preview.classList.remove('on');
+  }
+
+  // Scale the whole wordmark so it fits the stage with no scrolling.
+  function fitWordmark() {
+    var stage = $('#hiveStage'), word = $('#word');
+    if (!stage || !word || !word.style.width) return;
+    var ww = parseFloat(word.style.width), wh = parseFloat(word.style.height);
+    var pad = 48;
+    var s = Math.min((stage.clientWidth - pad) / ww, (stage.clientHeight - pad) / wh, 1.5);
+    if (s > 0 && isFinite(s)) word.style.transform = 'scale(' + s + ')';
   }
 
   function skeletons() {
@@ -852,8 +912,8 @@
   }
 
   function wireViewExtras(hash, m) {
-    // people hive: size hexes to the viewport once laid out
-    if ($('#hiveWrap')) requestAnimationFrame(fitHive);
+    // people wordmark: build tiles from live data, then scale to fit
+    if ($('#word')) requestAnimationFrame(buildWordmark);
     // skill tag input
     var skillInput = $('#skillInput');
     if (skillInput) {
@@ -957,6 +1017,7 @@
       case 'sign-in': A.signIn(); break;
       case 'sign-out': e.preventDefault(); closeModal(); A.signOut(); break;
       case 'user-menu': userMenu(); break;
+      case 'guest-menu': guestMenu(); break;
       case 'close-modal': closeModal(); break;
       case 'filter-skill': {
         var s = t.getAttribute('data-skill');
@@ -1172,7 +1233,20 @@
   // ------------------------------------------------------------------ boot
 
   window.addEventListener('hashchange', route);
-  window.addEventListener('resize', fitHive);
+  window.addEventListener('resize', fitWordmark);
+
+  // Sidebar collapse/expand — collapsed (icons only) by default; persisted.
+  (function initSidebar() {
+    var sidebar = $('#sidebar');
+    var toggle = $('#sidebarToggle');
+    if (!sidebar || !toggle) return;
+    if (localStorage.getItem('ice2026.sidebar') === 'expanded') sidebar.classList.add('expanded');
+    toggle.addEventListener('click', function () {
+      var expanded = sidebar.classList.toggle('expanded');
+      localStorage.setItem('ice2026.sidebar', expanded ? 'expanded' : 'collapsed');
+      toggle.setAttribute('aria-label', expanded ? 'Collapse menu' : 'Expand menu');
+    });
+  })();
 
   (function boot() {
     var justSignedIn = A.absorbLoginToken();
