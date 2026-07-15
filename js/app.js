@@ -83,6 +83,9 @@
 
   function me() { return state.data && state.data.me; }
   function signedIn() { return !!A.getToken(); }
+  function isMentor() { var m = me(); return !!(m && m.role === 'mentor'); }
+  // Mentors and admins may post announcements.
+  function canAnnounce() { return !!(state.data && (state.data.isAdmin || isMentor())); }
 
   function userById(id) {
     var users = (state.data && state.data.users) || [];
@@ -199,12 +202,12 @@
   // Build the ordered list of cells (grid col/row) plus the C-hollow centroid.
   function wordCells() {
     var cells = [], origins = [], cursor = 0;
-    WORD_LETTERS.forEach(function (L) {
+    WORD_LETTERS.forEach(function (L, li) {
       origins.push(cursor);
       var cols = L[0].length;
       for (var r = 0; r < L.length; r++) {
         for (var c = 0; c < cols; c++) {
-          if (L[r][c] === '1') cells.push({ r: r, c: cursor + c });
+          if (L[r][c] === '1') cells.push({ r: r, c: cursor + c, letter: li });
         }
       }
       cursor += cols + WORD_GAP;
@@ -230,8 +233,21 @@
       '<span><span class="dot participant"></span>' + participants + ' participant' + (participants === 1 ? '' : 's') + '</span>' +
       '</div>' +
       '<div class="hive-stage" id="hiveStage"><div class="word" id="word"></div></div>' +
-      (users.length ? '' : '<div class="hive-empty">No one has joined yet.</div>') +
+      '<div class="hive-caption">' + (users.length ? 'Hover a face to preview' : 'Waiting for people to join — slots fill as they register') + '</div>' +
       '</div>';
+  }
+
+  // The whole ICE wordmark always renders. Cells with no assigned user yet are
+  // placeholder octagons; joining users are assigned round-robin across I/C/E so
+  // early joiners scatter across the letters instead of clustering in one.
+  function slotOrder(cells) {
+    var groups = [[], [], []];
+    cells.forEach(function (cell, idx) { groups[cell.letter].push(idx); });
+    var order = [], maxLen = Math.max(groups[0].length, groups[1].length, groups[2].length);
+    for (var rk = 0; rk < maxLen; rk++) {
+      for (var li = 0; li < 3; li++) if (groups[li][rk] !== undefined) order.push(groups[li][rk]);
+    }
+    return order;
   }
 
   // Populate the wordmark tiles from live users, then size to fit (no scroll).
@@ -239,7 +255,6 @@
     var word = $('#word');
     if (!word) return;
     var users = (state.data && state.data.users) || [];
-    if (!users.length) return;
     var built = wordCells();
     var cells = built.cells;
     var w = 74, minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
@@ -252,21 +267,32 @@
     word.style.height = (maxY - minY) + 'px';
     word.innerHTML = '';
 
+    // map each assigned user onto a spread-out cell
+    var order = slotOrder(cells), cellUser = {};
+    for (var k = 0; k < users.length && k < order.length; k++) cellUser[order[k]] = users[k];
+
     cells.forEach(function (cell, i) {
-      var u = users[i % users.length];
-      var mentor = u.role === 'mentor';
-      var el = document.createElement('a');
-      el.className = 'oct ' + (mentor ? 'm' : 'p');
-      el.href = '#/profile/' + u.id;
+      var u = cellUser[i];
+      var el;
+      if (u) {
+        var mentor = u.role === 'mentor';
+        el = document.createElement('a');
+        el.className = 'oct ' + (mentor ? 'm' : 'p');
+        el.href = '#/profile/' + u.id;
+        el.title = u.name;
+        el.innerHTML = '<div class="oct-in">' +
+          (u.image ? '<img src="' + esc(u.image) + '" alt="" loading="lazy">' : '<span class="oct-blank">' + esc(initials(u.name)) + '</span>') +
+          '</div>';
+        el.addEventListener('mouseenter', function () { showHivePreview(u, mentor, el); });
+        el.addEventListener('mouseleave', hideHivePreview);
+      } else {
+        el = document.createElement('div');
+        el.className = 'oct empty';
+        el.innerHTML = '<div class="oct-in"><span class="oct-slot"><i class="fa-solid fa-user"></i></span></div>';
+      }
       el.style.width = w + 'px'; el.style.height = w + 'px';
       el.style.left = (cell.x - minX) + 'px';
       el.style.top = (cell.y - minY) + 'px';
-      el.title = u.name;
-      el.innerHTML = '<div class="oct-in">' +
-        (u.image ? '<img src="' + esc(u.image) + '" alt="" loading="lazy">' : '<span class="oct-blank">' + esc(initials(u.name)) + '</span>') +
-        '</div>';
-      el.addEventListener('mouseenter', function () { showHivePreview(u, mentor, el); });
-      el.addEventListener('mouseleave', hideHivePreview);
       word.appendChild(el);
     });
 
@@ -467,43 +493,98 @@
 
   // ---------------------------------------------------------- announcements
 
+  // Inline drafting card state: open + which announcement is being edited (null = new)
+  var annDraft = { open: false, editing: null };
+
   function viewAnnouncements() {
     var d = state.data;
     if (!d) return skeletons();
+    var canPost = canAnnounce();
     var anns = (d.announcements || []).slice().sort(function (a, b) {
       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
       return a.createdAt < b.createdAt ? 1 : -1;
     });
     var head = '<div class="section-head" style="margin-top:16px"><h2 style="font-size:30px">Announcements</h2>' +
-      (d.isAdmin ? '<button class="btn btn-gradient btn-sm" data-action="new-ann"><i class="fa-solid fa-plus"></i>New announcement</button>' : '') + '</div>';
-    if (!anns.length) return head + '<div class="empty"><i class="fa-solid fa-bullhorn"></i>No announcements yet.</div>';
-    return head + anns.map(function (a) {
-      var author = userById(a.authorId);
-      return '<div class="card ann"><div class="ann-head">' +
-        (a.isPinned ? '<span class="ann-pin" title="Pinned"><i class="fa-solid fa-thumbtack"></i></span>' : '') +
-        '<h3>' + esc(a.title) + '</h3>' +
-        '<span class="ann-type ' + esc(a.type) + '">' + esc(a.type) + '</span>' +
-        '<span class="ann-date">' + (author ? esc(author.name) + ' · ' : '') + esc(timeAgo(a.createdAt)) + '</span>' +
-        (d.isAdmin ? '<span><button class="btn btn-ghost btn-sm" data-action="edit-ann" data-id="' + esc(a.id) + '"><i class="fa-solid fa-pen"></i></button>' +
-          '<button class="btn btn-ghost btn-sm" data-action="del-ann" data-id="' + esc(a.id) + '"><i class="fa-regular fa-trash-can"></i></button></span>' : '') +
-        '</div><p class="ann-body">' + esc(a.content) + '</p></div>';
-    }).join('');
+      (canPost && !annDraft.open ? '<button class="btn btn-gradient btn-sm" data-action="new-ann"><i class="fa-solid fa-plus"></i>New announcement</button>' : '') + '</div>';
+    var draft = (canPost && annDraft.open) ? annDraftCard(annDraft.editing) : '';
+    var list = anns.length
+      ? anns.map(function (a) { return annCard(a, d); }).join('')
+      : (annDraft.open ? '' : '<div class="empty"><i class="fa-solid fa-bullhorn"></i>No announcements yet.</div>');
+    return head + draft + list;
   }
 
-  function annForm(a) {
+  function annCard(a, d) {
+    var author = userById(a.authorId);
+    var mine = me() && a.authorId === me().id;
+    var canEdit = d.isAdmin || mine;
+    return '<div class="card ann"><div class="ann-head">' +
+      (a.isPinned ? '<span class="ann-pin" title="Pinned"><i class="fa-solid fa-thumbtack"></i></span>' : '') +
+      '<h3>' + esc(a.title) + '</h3>' +
+      '<span class="ann-type ' + esc(a.type) + '">' + esc(a.type) + '</span>' +
+      (!a.isPublished ? '<span class="ann-type draft"><i class="fa-regular fa-pen-to-square"></i> draft</span>' : '') +
+      '<span class="ann-date">' + (author ? esc(author.name) + ' · ' : '') + esc(timeAgo(a.createdAt)) + '</span>' +
+      (canEdit ? '<span class="ann-actions"><button class="btn btn-ghost btn-sm" data-action="edit-ann" data-id="' + esc(a.id) + '"><i class="fa-solid fa-pen"></i></button>' +
+        '<button class="btn btn-ghost btn-sm" data-action="del-ann" data-id="' + esc(a.id) + '"><i class="fa-regular fa-trash-can"></i></button></span>' : '') +
+      '</div><p class="ann-body">' + esc(a.content) + '</p></div>';
+  }
+
+  // Full-width inline card (no modal) — draft, then Save / Discard / Send.
+  function annDraftCard(a) {
     a = a || {};
-    modal('<h2>' + (a.id ? 'Edit announcement' : 'New announcement') + '</h2>' +
+    var d = state.data || {};
+    var editing = !!a.id;
+    var author = (me() && me().name) || '';
+    return '<div class="card ann-draft">' +
       '<form class="form" id="annForm" data-id="' + esc(a.id || '') + '">' +
-      '<div class="field"><label>Title</label><input class="input" name="title" required maxlength="200" value="' + esc(a.title || '') + '"></div>' +
-      '<div class="field"><label>Content</label><textarea class="input" name="content" required maxlength="5000" rows="6">' + esc(a.content || '') + '</textarea></div>' +
+      '<div class="ann-draft-head"><h3><i class="fa-solid fa-bullhorn"></i>' + (editing ? 'Edit announcement' : 'New announcement') + '</h3>' +
+      (author ? '<span class="ann-draft-author">Posting as ' + esc(author) + '</span>' : '') + '</div>' +
+      '<div class="field"><label>Title</label><input class="input" name="title" required maxlength="200" value="' + esc(a.title || '') + '" placeholder="What&#39;s happening?"></div>' +
+      '<div class="field"><label>Message</label><textarea class="input" name="content" required maxlength="5000" rows="5" placeholder="Write your announcement…">' + esc(a.content || '') + '</textarea></div>' +
       '<div class="form-row">' +
       '<div class="field"><label>Type</label><select class="input" name="type">' +
       ['general', 'important', 'urgent'].map(function (t) { return '<option' + (a.type === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') +
       '</select></div>' +
-      '<div class="field"><label>Pinned</label><select class="input" name="isPinned"><option value="false">No</option><option value="true"' + (a.isPinned ? ' selected' : '') + '>Yes</option></select></div>' +
-      '</div><div class="form-status" id="annFormStatus"></div>' +
-      '<div class="form-actions"><button class="btn btn-gradient" type="submit"><span class="label">' + (a.id ? 'Save' : 'Publish') + '</span><span class="spin"></span></button>' +
-      '<button class="btn btn-ghost" type="button" data-action="close-modal">Cancel</button></div></form>');
+      (d.isAdmin ? '<div class="field"><label>Pinned</label><select class="input" name="isPinned"><option value="false">No</option><option value="true"' + (a.isPinned ? ' selected' : '') + '>Yes</option></select></div>' : '') +
+      '</div>' +
+      '<div class="form-status" id="annFormStatus"></div>' +
+      '<div class="form-actions">' +
+      '<button class="btn btn-gradient" type="submit"><span class="label"><i class="fa-regular fa-paper-plane"></i> Send</span><span class="spin"></span></button>' +
+      '<button class="btn btn-outline" type="button" data-action="save-ann"><span class="label"><i class="fa-regular fa-floppy-disk"></i> Save draft</span><span class="spin"></span></button>' +
+      '<button class="btn btn-ghost" type="button" data-action="discard-ann">Discard</button>' +
+      '</div></form></div>';
+  }
+
+  function openAnnDraft(editing) {
+    annDraft = { open: true, editing: editing || null };
+    if (location.hash === '#/announcements') route(); else location.hash = '#/announcements';
+  }
+
+  async function submitAnn(form, publish, btn) {
+    var status = $('#annFormStatus');
+    if (status) { status.className = 'form-status'; status.textContent = ''; }
+    var fd = new FormData(form);
+    var title = String(fd.get('title') || '').trim();
+    var content = String(fd.get('content') || '').trim();
+    if (!title || !content) { if (status) status.textContent = 'Title and message are required.'; return; }
+    busy(btn, true);
+    var annId = form.getAttribute('data-id');
+    var body = {
+      title: title, content: content,
+      type: fd.get('type') || 'general',
+      isPinned: fd.get('isPinned') === 'true',
+      isPublished: publish,
+    };
+    try {
+      annId ? await A.api('ann_update', Object.assign({ id: annId }, body))
+            : await A.api('ann_create', body);
+      annDraft = { open: false, editing: null };
+      await refresh();
+      route();
+      toast(publish ? 'Announcement sent' : 'Draft saved');
+    } catch (err) {
+      if (status) status.textContent = err.message || 'Something went wrong.';
+      busy(btn, false);
+    }
   }
 
   // ------------------------------------------------------ register / edit
@@ -898,6 +979,8 @@
 
   function route() {
     var hash = location.hash || '#/';
+    // Drop an open announcement draft when leaving the news page.
+    if (annDraft.open && !/^#\/announcements$/.test(hash)) annDraft = { open: false, editing: null };
     var view = $('#view');
     for (var i = 0; i < routes.length; i++) {
       var m = hash.match(routes[i].re);
@@ -1084,13 +1167,15 @@
         busy(t, false);
         break;
       }
-      case 'new-ann': annForm(); break;
+      case 'new-ann': openAnnDraft(null); break;
       case 'edit-ann': {
         var ann = null;
         (state.data.announcements || []).forEach(function (x) { if (x.id === id) ann = x; });
-        annForm(ann);
+        openAnnDraft(ann);
         break;
       }
+      case 'save-ann': { var af = $('#annForm'); if (af) submitAnn(af, false, t); break; }
+      case 'discard-ann': annDraft = { open: false, editing: null }; route(); break;
       case 'del-ann':
         if (await confirmModal('Delete announcement?', 'This cannot be undone.')) {
           try { await A.api('ann_delete', { id: id }); toast('Deleted'); refresh(); }
@@ -1194,24 +1279,8 @@
     }
 
     if (form.id === 'annForm') {
-      busy(btn, true);
-      var fd2 = new FormData(form);
-      var annId = form.getAttribute('data-id');
-      var body2 = {
-        title: fd2.get('title'), content: fd2.get('content'),
-        type: fd2.get('type'), isPinned: fd2.get('isPinned') === 'true',
-      };
-      try {
-        annId ? await A.api('ann_update', Object.assign({ id: annId }, body2))
-              : await A.api('ann_create', body2);
-        closeModal();
-        await refresh();
-        location.hash = '#/announcements';
-        toast('Announcement published');
-      } catch (err) {
-        $('#annFormStatus').textContent = err.message;
-        busy(btn, false);
-      }
+      // Submit = Send (publish). Save-draft goes through the save-ann action.
+      submitAnn(form, true, btn);
     }
 
     if (form.id === 'linkForm') {

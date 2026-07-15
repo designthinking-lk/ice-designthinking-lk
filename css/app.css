@@ -419,9 +419,21 @@ textarea.input { resize: vertical; min-height: 90px; }
 .ann-type.general { background: var(--bg-subtle); color: var(--text-muted); }
 .ann-type.important { background: rgba(97, 0, 255, 0.09); color: var(--color-accent); }
 .ann-type.urgent { background: #fdecea; color: #b3261e; }
+.ann-type.draft { background: #fff4e0; color: #a56100; }
 .ann-pin { color: var(--color-accent); font-size: 13px; }
 .ann-date { color: var(--text-faint); font-size: 13px; margin-left: auto; }
+.ann-actions { display: inline-flex; gap: 2px; }
 .ann-body { color: var(--text-body); white-space: pre-wrap; margin: 0; }
+
+/* Inline announcement drafting card (full width, matches the empty block) */
+.ann-draft { padding: 22px; margin-bottom: 18px; border-color: var(--border-strong); }
+.ann-draft .form { gap: 16px; max-width: none; }
+.ann-draft-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.ann-draft-head h3 { margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.ann-draft-head h3 i { color: var(--color-accent); font-size: 15px; }
+.ann-draft-author { color: var(--text-muted); font-size: 13px; }
+.ann-draft .form-actions { margin-top: 4px; flex-wrap: wrap; }
+.ann-draft .form-actions .btn-ghost { margin-left: auto; }
 
 /* ---------------------------------------------------------------- messages */
 .msg-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
@@ -511,7 +523,7 @@ table.admin tr:last-child td { border-bottom: none; }
 .hive-legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; }
 .dot.mentor { background: var(--accent); }
 .dot.participant { background: var(--accent2); }
-.hive-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #7a7f89; font-size: 14px; }
+.hive-caption { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; color: #6b707a; font-size: 12.5px; }
 .hive-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .word { position: relative; }
 
@@ -530,6 +542,14 @@ table.admin tr:last-child td { border-bottom: none; }
 .oct-in::after { content: ""; position: absolute; inset: 0; mix-blend-mode: color; opacity: 0.9; }
 .oct.m .oct-in::after { background: var(--accent); }
 .oct.p .oct-in::after { background: var(--accent2); }
+
+/* placeholder slot — an empty octagon, waiting to be filled */
+.oct.empty { cursor: default; }
+.oct.empty .oct-in { background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.oct.empty .oct-in::after { display: none; }
+.oct-slot { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.16); font-size: 24px; }
+.oct.empty:hover { transform: none; }
+.word.focus .oct.empty { opacity: 0.4; filter: none; }
 
 /* hover focus: dim everyone else, spotlight the hovered person */
 .word.focus .oct { opacity: 0.26; filter: saturate(0.8); }
