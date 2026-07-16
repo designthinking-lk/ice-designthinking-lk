@@ -995,17 +995,23 @@
     btn.title = cardVideoMuted ? 'Unmute video' : 'Mute video';
   }
 
-  // Add/edit the video URL — the yt-card picker moves into a small modal
-  // opened from the card footer's video button.
-  function openVideoModal() {
+  // Add/edit the video URL — the yt-card picker lives in an inline overlay on
+  // the card front, opened from the footer's video button.
+  function openVideoOverlay() {
+    var ov = $('#videoOverlay');
+    if (!ov) return;
     var hid = $('#profileForm [name="video"]');
-    modal('<h2>Intro video</h2>' +
-      '<p style="color:var(--text-body)">Paste a YouTube link — it plays as your card’s backdrop.</p>' +
-      '<div class="yt-card" id="ytCard">' + ytCardHtml((hid && hid.value) || '') + '</div>' +
-      '<div class="form-actions" style="margin-top:18px"><button class="btn btn-gradient" type="button" data-action="close-modal">Done</button></div>');
+    var box = $('#ytCard');
+    if (box) box.innerHTML = ytCardHtml((hid && hid.value) || '');
+    ov.hidden = false;
     wireYt();
     var input = $('#ytInput');
     if (input) input.focus();
+  }
+
+  function closeVideoOverlay() {
+    var ov = $('#videoOverlay');
+    if (ov) ov.hidden = true;
   }
 
   // ---- validation ----
@@ -1068,7 +1074,15 @@
       // intro video plays as the card's backdrop (everything above the footer)
       '<div class="card-video" id="cardVideo"></div>' +
       '<div class="idcard-head"><span class="idcard-brand">' + brandHtml(true) + '</span>' +
-      '<span class="idcard-type">' + (u.role === 'mentor' ? 'MENTOR' : 'MEMBER') + '</span></div>' +
+      // role is self-selected on the card: member (participant/student) or
+      // mentor (facilitator) — admins keep their fixed organizer badge
+      (u.role === 'admin'
+        ? '<span class="idcard-type">ORGANIZER</span>'
+        : '<span class="idcard-type idcard-type-select"><select name="roleSel" aria-label="Your role">' +
+          '<option value="participant"' + (u.role === 'mentor' ? '' : ' selected') + '>Member</option>' +
+          '<option value="mentor"' + (u.role === 'mentor' ? ' selected' : '') + '>Mentor</option>' +
+          '</select><i class="fa-solid fa-caret-down"></i></span>') +
+      '</div>' +
       '<div class="idcard-main">' +
       '<div class="idcard-photo"><div class="photo-vp" id="photoVp">' +
       (u.image
@@ -1109,6 +1123,14 @@
       '<button type="button" class="cskill-addbtn" data-action="add-typed-skill">Add</button></div>' +
       '<div class="cskill-pool" id="skillPool"></div>' +
       '</div>' +
+      // intro video picker — an inline overlay on the card (like the skill
+      // picker), no popup windows
+      '<div class="cskill-overlay video-overlay" id="videoOverlay" hidden>' +
+      '<div class="cskill-oh"><span>Intro video</span>' +
+      '<button type="button" class="cskill-close" data-action="close-video" aria-label="Done"><i class="fa-solid fa-xmark"></i></button></div>' +
+      '<p class="video-ov-hint">Paste a YouTube link — it plays as your card’s backdrop.</p>' +
+      '<div class="yt-card" id="ytCard"></div>' +
+      '</div>' +
       '</div>' + // close .idfront
 
       // ---------------- back
@@ -1134,10 +1156,78 @@
       // value travels with the form
       '<input type="hidden" name="video" value="' + (vid ? 'https://youtu.be/' + esc(vid) : '') + '">' +
 
+      // live persona — Claude interprets the card as it fills in
+      '<div class="persona" id="personaPanel"><p class="persona-text" id="personaText">' + esc(personaDefaultText(isNew)) + '</p></div>' +
+
       '<div class="form-status" id="profileStatus"></div>' +
-      '<div class="form-actions"><button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Join ' + esc(eventName()) : 'Save changes') + '</span><span class="spin"></span></button></div>' +
+      // for new registrations the button only appears once the card is complete
+      '<div class="form-actions" id="joinWrap"' + (isNew ? ' hidden' : '') + '><button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button></div>' +
       '</div>' + // .pf-right
       '</form>';
+  }
+
+  // ---- live persona (LLM via the backend `persona` action) ----
+
+  function personaDefaultText(isNew) {
+    if (!isNew) return 'This is how others will meet you — your persona refreshes as you edit the card.';
+    var prefill = state.data && state.data.prefill;
+    if (prefill && prefill.profile) {
+      return 'Welcome back! Your card is filled in from last time — check it over, and watch your persona take shape here.';
+    }
+    return 'Every great team starts with a person. Fill in your card and a persona will take shape right here — it’s how mentors and other participants will first meet you.';
+  }
+
+  var personaTimer = null;
+  var personaLastPayload = '';
+  var personaDisabled = false; // backend has no API key configured
+
+  function personaFields() {
+    var form = $('#profileForm');
+    if (!form) return null;
+    var fd = new FormData(form);
+    var first = String(fd.get('firstName') || '').trim();
+    var last = String(fd.get('lastName') || '').trim();
+    return {
+      name: (first + ' ' + last).trim(),
+      role: fd.get('roleSel') || 'participant',
+      affiliation: String(fd.get('affiliation') || '').trim(),
+      expertise: String(fd.get('expertise') || '').trim(),
+      bio: String(fd.get('bio') || '').trim(),
+      skills: getTagValues(),
+    };
+  }
+
+  function schedulePersona() {
+    if (personaDisabled) return;
+    clearTimeout(personaTimer);
+    personaTimer = setTimeout(refreshPersona, 1400);
+  }
+
+  async function refreshPersona() {
+    if (personaDisabled) return;
+    var f = personaFields();
+    if (!f) return;
+    if (!f.name && !f.affiliation && !f.expertise && !f.bio && !f.skills.length) return;
+    var payload = JSON.stringify(f);
+    if (payload === personaLastPayload) return;
+    personaLastPayload = payload;
+    var el = $('#personaText');
+    if (el) el.classList.add('thinking');
+    try {
+      var r = await A.api('persona', f);
+      if (r.disabled) { personaDisabled = true; return; }
+      // only render if the form still matches what we asked about — a newer
+      // keystroke has its own refresh queued
+      var now = personaFields();
+      if (!now || JSON.stringify(now) !== payload) return;
+      var out = $('#personaText');
+      if (out && r.text) out.textContent = r.text;
+    } catch (e) {
+      /* persona is decorative — fail silently */
+    } finally {
+      var done = $('#personaText');
+      if (done) done.classList.remove('thinking');
+    }
   }
 
   var MAX_SKILLS = 3;
@@ -1190,6 +1280,7 @@
     refreshSkillsUI();
     saveRegDraft();
     updateJoinState();
+    schedulePersona();
     if (getTagValues().length >= MAX_SKILLS) closeSkills(); // the third pick finishes
   }
 
@@ -1245,6 +1336,7 @@
       linkGithub: fd.get('linkGithub') || '', linkWebsite: fd.get('linkWebsite') || '',
       linkLinkedin: fd.get('linkLinkedin') || '', video: fd.get('video') || '',
       image: fd.get('image') || '', skills: getTagValues(),
+      role: fd.get('roleSel') || 'participant',
     };
   }
   function saveRegDraft() {
@@ -1266,6 +1358,7 @@
       affiliation: d.affiliation, expertise: d.expertise, bio: d.bio, gender: d.gender,
       image: d.image, video: d.video, skills: d.skills || [],
       links: [d.linkGithub, d.linkWebsite, d.linkLinkedin].filter(Boolean),
+      role: d.role || 'participant',
     };
   }
 
@@ -1278,17 +1371,14 @@
     if (state.data && !state.data.registrationOpen) {
       return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-door-closed"></i>Registration is closed. Contact the organizers if you believe this is a mistake.</div>';
     }
-    if (!formReady()) return profileScaffold('Welcome to ' + esc(eventName()),
-      'Set up your public profile so mentors and other participants can find you.', formLoading());
+    if (!formReady()) return profileScaffold('', '', formLoading());
     setTimeout(afterProfileForm, 0);
     // A local draft wins; otherwise a returning person (known in the
-    // cross-project directory) starts from their last profile.
+    // cross-project directory) starts from their last profile. No heading —
+    // the persona panel beside the card carries the narration.
     var prefill = state.data && state.data.prefill;
     var seed = draftToUser(loadRegDraft()) || (prefill && prefill.profile) || null;
-    var sub = (prefill && prefill.profile)
-      ? 'Welcome back! We’ve filled in your profile from last time — check it over and join.'
-      : 'Set up your public profile so mentors and other participants can find you.';
-    return profileScaffold('Welcome to ' + esc(eventName()), sub, profileForm(seed, true));
+    return profileScaffold('', '', profileForm(seed, true));
   }
 
   function viewMe() {
@@ -1299,7 +1389,8 @@
   }
 
   function profileScaffold(title, sub, inner) {
-    return '<div class="profile-edit"><h1 style="font-size:30px">' + title + '</h1>' +
+    return '<div class="profile-edit">' +
+      (title ? '<h1 style="font-size:30px">' + title + '</h1>' : '') +
       (sub ? '<p style="color:var(--text-body)">' + sub + '</p>' : '') + inner + '</div>';
   }
 
@@ -1369,6 +1460,9 @@
     var complete = photoOk && textOk && skillsOk && videoOk && linksOk;
     btn.disabled = !complete;
     btn.classList.toggle('btn-disabled', !complete);
+    // the "Let's build something amazing" button only appears once complete
+    var wrap = $('#joinWrap');
+    if (wrap) wrap.hidden = !complete;
   }
 
   // ---- name inputs size to their exact rendered text, so first + last read as
@@ -1478,6 +1572,11 @@
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(function () { nameInputs.forEach(sizeName); });
       }
+      // Live persona: any edit (both new and edit forms) re-interprets the card.
+      personaLastPayload = '';
+      pform.addEventListener('input', schedulePersona);
+      pform.addEventListener('change', schedulePersona);
+      refreshPersona(); // initial (edit form / restored draft / prefill)
       var isNew = pform.getAttribute('data-new') === '1';
       if (isNew) {
         // Autosave the fresh-registration form + re-evaluate the Join gate.
@@ -1682,7 +1781,7 @@
           skillInput.value = '';
         } else if (e.key === 'Backspace' && !skillInput.value) {
           var chips = $all('#skillTags [data-skill]');
-          if (chips.length) { chips[chips.length - 1].remove(); refreshSkillsUI(); saveRegDraft(); updateJoinState(); }
+          if (chips.length) { chips[chips.length - 1].remove(); refreshSkillsUI(); saveRegDraft(); updateJoinState(); schedulePersona(); }
         }
       });
     }
@@ -1758,6 +1857,8 @@
       skills: getTagValues(),
       links: links,
       video: video,
+      // undefined (dropped from JSON) when the card shows the fixed admin badge
+      role: fd.get('roleSel') || undefined,
     };
   }
 
@@ -1900,7 +2001,8 @@
         ytRender('');
         break;
       }
-      case 'card-video-edit': openVideoModal(); break;
+      case 'card-video-edit': openVideoOverlay(); break;
+      case 'close-video': closeVideoOverlay(); break;
       case 'card-video-mute': {
         cardVideoMuted = !cardVideoMuted;
         cardVideoCmd(cardVideoMuted ? 'mute' : 'unMute');
@@ -1908,7 +2010,7 @@
         break;
       }
       case 'add-tag': addTag(t.getAttribute('data-skill')); break;
-      case 'rm-tag': e.preventDefault(); t.closest('[data-skill]').remove(); refreshSkillsUI(); saveRegDraft(); updateJoinState(); break;
+      case 'rm-tag': e.preventDefault(); t.closest('[data-skill]').remove(); refreshSkillsUI(); saveRegDraft(); updateJoinState(); schedulePersona(); break;
       case 'open-skills': openSkills(); break;
       case 'close-skills': closeSkills(); break;
       case 'gender-toggle': { var gb = $('#cgender'); if (gb) { gb.setAttribute('data-open', '1'); renderGender(); } break; }

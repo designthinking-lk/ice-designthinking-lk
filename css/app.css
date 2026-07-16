@@ -71,12 +71,9 @@ button { font-family: inherit; }
 }
 .sidebar-toggle:hover { background: var(--bg-subtle); border-color: var(--border-strong); color: var(--text); }
 
-.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; overflow: hidden; }
-.brand-mark {
-  width: 26px; height: 26px; border-radius: 8px; flex: none;
-  background: var(--gradient-brand);
-  box-shadow: 0 2px 8px rgba(97, 0, 255, 0.35);
-}
+/* brand text sits right next to the hamburger at the very top */
+.sidebar-top { display: flex; align-items: center; gap: 12px; flex: none; }
+.brand { display: flex; align-items: center; overflow: hidden; }
 .brand-name {
   font-family: var(--font-display); font-weight: 800; font-size: 21px;
   letter-spacing: -0.02em; color: var(--text); white-space: nowrap;
@@ -86,6 +83,9 @@ button { font-family: inherit; }
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+/* vertically centre the main links: the top spacer and the admin item's
+   auto margin absorb the free space equally (admin stays pinned at bottom) */
+.nav::before { content: ''; margin-top: auto; }
 .nav a {
   display: flex; align-items: center; gap: 11px;
   padding: 10px 13px; border-radius: 10px;
@@ -121,12 +121,12 @@ button { font-family: inherit; }
 .project-select:hover { border-color: var(--border-strong); color: var(--text); }
 
 /* collapsed: icons only */
-.sidebar:not(.expanded) .brand-name,
+.sidebar:not(.expanded) .brand,
 .sidebar:not(.expanded) .project-switcher,
 .sidebar:not(.expanded) .nav a span,
 .sidebar:not(.expanded) .nav a .ext,
 .sidebar:not(.expanded) .nav .badge { display: none; }
-.sidebar:not(.expanded) .brand { justify-content: center; padding: 0; }
+.sidebar:not(.expanded) .sidebar-top { justify-content: center; }
 .sidebar:not(.expanded) .nav a { justify-content: center; padding: 10px 0; }
 
 /* ------------------------------------------------------ topbar auth actions */
@@ -332,6 +332,14 @@ textarea.input { resize: vertical; min-height: 90px; }
 }
 .pf-left .idcard-scene { margin-top: 0; }
 .pf-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+/* live persona — Claude's read of the card, refreshed as it fills in */
+.persona { padding: 6px 2px 0; }
+.persona-text {
+  margin: 0; font-size: 16px; line-height: 1.75; color: var(--text-body);
+  transition: opacity 0.3s;
+}
+.persona-text.thinking { opacity: 0.45; }
 .form-loading {
   display: flex; align-items: center; gap: 12px; color: var(--text-muted);
   padding: 60px 0; font-size: 15px;
@@ -345,6 +353,10 @@ textarea.input { resize: vertical; min-height: 90px; }
   transform-style: preserve-3d; transition: transform 0.7s cubic-bezier(.2,.7,.2,1);
 }
 .idcard.flipped { transform: rotateY(180deg); }
+/* the hidden face must never eat clicks meant for the visible one
+   (fixes the unclickable "Front" button on the back face) */
+.idcard.flipped .idfront { pointer-events: none; }
+.idcard:not(.flipped) .idback { pointer-events: none; }
 .idface {
   position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
   border-radius: 18px; overflow: hidden; padding: 20px 22px;
@@ -369,15 +381,28 @@ textarea.input { resize: vertical; min-height: 90px; }
   font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em;
   padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.16);
 }
+/* member/mentor picker — same pill, with a tiny caret marking it as a select */
+.idcard-type-select { display: inline-flex; align-items: center; padding: 0; }
+.idcard-type-select select {
+  appearance: none; -webkit-appearance: none; border: none; background: transparent;
+  color: #fff; font-family: inherit; font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 4px 4px 4px 10px; cursor: pointer; outline: none;
+}
+.idcard-type-select select option { color: #111; text-transform: none; letter-spacing: normal; font-weight: 500; }
+.idcard-type-select > i { font-size: 9px; opacity: 0.85; margin-right: 9px; pointer-events: none; }
 .idcard-main { flex: 1; display: flex; gap: 18px; align-items: center; min-height: 0; padding: 10px 0; }
-.idcard-photo { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none; }
+/* fixed-width column: the layout must not shift when a photo or the
+   drag/zoom hint appears */
+.idcard-photo { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none; width: 132px; }
 .photo-vp {
-  position: relative; width: 116px; height: 116px; border-radius: 14px; overflow: hidden;
-  background: rgba(255,255,255,0.14); border: 2px solid rgba(255,255,255,0.5);
+  position: relative; width: 132px; height: 132px; border-radius: 14px; overflow: hidden;
+  background: rgba(255,255,255,0.14); border: none;
   touch-action: none; cursor: grab; user-select: none;
 }
 .photo-vp:active { cursor: grabbing; }
-.photo-vp img { position: absolute; user-select: none; -webkit-user-drag: none; }
+/* photo keeps a hint of the card tint, like the video backdrop */
+.photo-vp img { position: absolute; user-select: none; -webkit-user-drag: none; opacity: 0.88; }
 .photo-vp .photo-static { width: 100%; height: 100%; object-fit: cover; left: 0; top: 0; }
 .photo-empty {
   position: absolute; inset: 0; display: flex; flex-direction: column; gap: 6px;
@@ -385,15 +410,25 @@ textarea.input { resize: vertical; min-height: 90px; }
   color: rgba(255,255,255,0.85); font-size: 11.5px; font-weight: 600;
 }
 .photo-empty i { font-size: 22px; }
+/* change-photo button: centred on the photo, only visible on hover */
 .photo-change {
-  position: absolute; right: 5px; bottom: 5px; width: 26px; height: 26px; z-index: 2;
-  border-radius: 50%; border: none; cursor: pointer; color: #fff; font-size: 11px;
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 34px; height: 34px; z-index: 2; opacity: 0;
+  border-radius: 50%; border: none; cursor: pointer; color: #fff; font-size: 13px;
   background: rgba(14,15,17,0.55); display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.15s, background 0.15s;
 }
+.photo-vp:hover .photo-change { opacity: 1; }
 .photo-change:hover { background: rgba(14,15,17,0.8); }
 .photo-empty ~ .photo-change { display: none; }
-.photo-hint { font-size: 10px; color: rgba(255,255,255,0.75); }
-.idcard-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.photo-hint {
+  font-size: 10px; color: rgba(255,255,255,0.75);
+  width: 132px; text-align: center; line-height: 1.45;
+}
+/* name keeps its distance; email / affiliation / expertise sit close together,
+   and the block centres against the photo so text spans the photo row */
+.idcard-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+.idcard-fields .cname-row { margin-bottom: 8px; }
 .cinput {
   width: 100%; border: none; outline: none; font-family: inherit; color: #fff;
   background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);
@@ -420,17 +455,18 @@ textarea.input { resize: vertical; min-height: 90px; }
 .cname-row .cname { flex: 0 0 auto; width: auto; min-width: 2ch; }
 /* gender picker sits at the start of the name line — round M / F badge */
 .cgender { display: inline-flex; align-items: center; gap: 4px; flex: none; margin-right: 4px; }
+/* letter only at rest — the circle background/outline appears on hover, and the
+   letter size matches the other small field icons */
 .cg-btn {
   display: inline-flex; align-items: center; justify-content: center; padding: 0;
   width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
-  font-family: var(--font-display); font-weight: 700; font-size: 13px; line-height: 1;
-  border: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.14); color: #fff;
+  font-family: var(--font-display); font-weight: 700; font-size: 11.5px; line-height: 1;
+  border: 1px solid transparent; background: transparent; color: rgba(255,255,255,0.9);
 }
-.cg-btn:hover { background: rgba(255,255,255,0.26); border-color: rgba(255,255,255,0.7); }
+.cg-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.55); color: #fff; }
 .cg-btn.on { background: #fff; color: #4b12ab; border-color: #fff; }
-/* the single chosen badge keeps its round shape, a touch brighter */
-.cg-btn.selected { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.45); color: #fff; }
-.cg-btn.selected:hover { background: rgba(255,255,255,0.4); }
+.cg-btn.selected { background: transparent; border-color: transparent; color: rgba(255,255,255,0.9); }
+.cg-btn.selected:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.5); color: #fff; }
 /* proposed workshop email under the name */
 .cemail { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: rgba(255,255,255,0.9); }
 .cemail > i { width: 15px; text-align: center; color: rgba(255,255,255,0.7); font-size: 11px; flex: none; }
@@ -497,9 +533,17 @@ textarea.input { resize: vertical; min-height: 90px; }
 .cskill-pick:hover { background: rgba(255,255,255,0.26); border-color: rgba(255,255,255,0.4); }
 .cskill-full { color: rgba(255,255,255,0.75); font-size: 13px; padding: 8px 2px; }
 
+/* intro-video picker — same inline-overlay treatment as the skill picker */
+.video-overlay { justify-content: flex-start; gap: 14px; }
+.video-ov-hint { margin: 0; color: rgba(255,255,255,0.75); font-size: 13px; flex: none; }
+.video-overlay .yt-card { flex: none; }
+
+/* fixed-height footer: with the card's 20px bottom padding, the top border
+   sits exactly 56px from the card edge — the video layer's bottom edge */
 .idcard-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  border-top: 1px solid rgba(255,255,255,0.18); padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  height: 36px; box-sizing: border-box; flex: none;
 }
 .idcard-url { font-size: 11px; letter-spacing: 0.02em; color: rgba(255,255,255,0.75); }
 .foot-right { display: flex; align-items: center; gap: 7px; flex: none; }
@@ -536,11 +580,13 @@ textarea.input { resize: vertical; min-height: 90px; }
   padding: 6px 13px; font-size: 12px; font-weight: 600; font-family: inherit;
 }
 .flip-btn:hover { background: rgba(255,255,255,0.28); }
-.idback { gap: 14px; }
-.idband { height: 34px; margin: 6px -22px 2px; background: rgba(0,0,0,0.55); flex: none; }
-.cbio { flex: 1; min-height: 92px; resize: none; overflow: hidden; font-size: 13px; line-height: 1.55; }
+.idback { gap: 12px; }
+/* magstripe at real credit-card proportions (ISO 7811: ~9.5-12.7mm of the
+   53.98mm card height ≈ 18-23%) */
+.idband { height: 21%; min-height: 44px; margin: 6px -22px 2px; background: rgba(0,0,0,0.55); flex: none; }
+.cbio { flex: 1; min-height: 78px; resize: none; overflow: hidden; font-size: 13px; line-height: 1.55; }
 .cbio:focus { overflow: auto; }
-.idlinks { display: flex; flex-direction: column; gap: 10px; flex: none; }
+.idlinks { display: flex; flex-direction: column; gap: 5px; flex: none; }
 
 /* ------------------------------------------------------------ youtube card */
 .yt-card { border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; background: #fff; }
