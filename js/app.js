@@ -876,8 +876,8 @@
       else if (/linkedin\.com/i.test(s) && !ll) ll = s;
       else if (!lw) lw = s;
     });
-    var genders = opts('gender', ['Female', 'Male', 'Non-binary', 'Prefer not to say']);
     var skills = (u.skills || []);
+    var gender = u.gender || '';
     var vid = ytId(u.video || '');
     // The card edits first + last separately; they recombine into the stored `name`.
     var nameParts = String(u.name || '').trim().split(/\s+/).filter(Boolean);
@@ -902,9 +902,11 @@
       '</div><span class="photo-hint" id="photoHint"' + (u.image ? '' : ' hidden') + '>drag to adjust · scroll to zoom</span></div>' +
       '<div class="idcard-fields">' +
       '<div class="cname-row">' +
+      '<span class="cgender" id="cgender"></span>' +
       '<input class="cinput cname" name="firstName" required maxlength="50" placeholder="First name" value="' + esc(firstName) + '">' +
       '<input class="cinput cname" name="lastName" maxlength="50" placeholder="Last name" value="' + esc(lastName) + '">' +
       '</div>' +
+      '<input type="hidden" name="gender" value="' + esc(gender) + '">' +
       '<div class="cemail" id="proposedEmail" hidden><i class="fa-regular fa-envelope"></i>' +
       '<span class="cemail-addr" id="cemailAddr"></span>' +
       '<span class="cemail-status" id="cemailStatus" data-status=""></span></div>' +
@@ -948,10 +950,6 @@
       '</div>' + // .pf-left
 
       '<div class="pf-right">' +
-      '<div class="field"><label>Gender <span class="hint">optional, organizers only</span></label><select class="input" name="gender">' +
-      [''].concat(genders).map(function (g) {
-        return '<option value="' + esc(g) + '"' + (u.gender === g ? ' selected' : '') + '>' + (esc(g) || '—') + '</option>';
-      }).join('') + '</select></div>' +
       '<div class="field"><label>Intro video <span class="hint">YouTube, optional</span></label>' +
       '<div class="yt-card" id="ytCard">' + ytCardHtml(u.video || '') + '</div>' +
       '<input type="hidden" name="video" value="' + (vid ? 'https://youtu.be/' + esc(vid) : '') + '"></div>' +
@@ -1026,6 +1024,27 @@
   function closeSkills() {
     var ov = $('#skillOverlay');
     if (ov) ov.hidden = true;
+  }
+
+  // ---- gender picker on the name line (icon-only: Male / Female) ----
+  function genderIcon(g) { return g === 'Female' ? 'fa-venus' : 'fa-mars'; }
+
+  function renderGender() {
+    var box = $('#cgender');
+    if (!box) return;
+    var hid = $('#profileForm [name="gender"]');
+    var val = hid ? hid.value : '';
+    var isMF = (val === 'Male' || val === 'Female');
+    var open = box.getAttribute('data-open') === '1';
+    if (isMF && !open) {
+      // collapsed: just the chosen icon; click to reselect
+      box.innerHTML = '<button type="button" class="cg-btn selected" data-action="gender-toggle" title="' + esc(val) + ' — tap to change"><i class="fa-solid ' + genderIcon(val) + '"></i></button>';
+    } else {
+      // expanded: both options
+      box.innerHTML =
+        '<button type="button" class="cg-btn' + (val === 'Male' ? ' on' : '') + '" data-action="gender-pick" data-gender="Male" title="Male"><i class="fa-solid fa-mars"></i></button>' +
+        '<button type="button" class="cg-btn' + (val === 'Female' ? ' on' : '') + '" data-action="gender-pick" data-gender="Female" title="Female"><i class="fa-solid fa-venus"></i></button>';
+    }
   }
 
   // ---- registration draft autosave (localStorage) ----
@@ -1245,6 +1264,7 @@
     photoEd = null; // fresh form; only set when the user picks a new photo
     linkStatus = {}; linkTimers = {}; linkSeq = {}; emailSeq = 0;
     refreshSkillsUI();
+    renderGender();
     var pform = $('#profileForm');
     if (pform) {
       wireLinkChecks(pform); // verify links + show ✓/⚠ (both new and edit forms)
@@ -1621,6 +1641,14 @@
       case 'rm-tag': e.preventDefault(); t.closest('[data-skill]').remove(); refreshSkillsUI(); saveRegDraft(); updateJoinState(); break;
       case 'open-skills': openSkills(); break;
       case 'close-skills': closeSkills(); break;
+      case 'gender-toggle': { var gb = $('#cgender'); if (gb) { gb.setAttribute('data-open', '1'); renderGender(); } break; }
+      case 'gender-pick': {
+        var hid = $('#profileForm [name="gender"]');
+        if (hid) hid.value = t.getAttribute('data-gender') || '';
+        var gbx = $('#cgender'); if (gbx) gbx.setAttribute('data-open', '0');
+        renderGender(); saveRegDraft();
+        break;
+      }
       case 'add-typed-skill': { var si3 = $('#skillInput'); if (si3) { addTag(si3.value); si3.value = ''; si3.focus(); } break; }
     }
   });

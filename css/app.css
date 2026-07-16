@@ -404,8 +404,20 @@ textarea.input { resize: vertical; min-height: 90px; }
 .cname { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
 /* First + last sit side by side and size to their content (set in JS) so at rest
    they read as one name — "Sankha Cooray" — not two fields spread across the card. */
-.cname-row { display: flex; align-items: baseline; gap: 0.32em; flex-wrap: wrap; }
+.cname-row { display: flex; align-items: center; gap: 0.32em; flex-wrap: wrap; }
 .cname-row .cname { flex: 0 0 auto; width: auto; min-width: 2ch; }
+/* gender picker sits at the start of the name line (icon-only) */
+.cgender { display: inline-flex; align-items: center; gap: 3px; flex: none; margin-right: 4px; }
+.cg-btn {
+  display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 13px;
+  border: 1px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.12); color: #fff;
+}
+.cg-btn:hover { background: rgba(255,255,255,0.24); border-color: rgba(255,255,255,0.65); }
+.cg-btn.on { background: #fff; color: #4b12ab; border-color: #fff; }
+/* the single chosen icon reads like the other leading field icons */
+.cg-btn.selected { width: 22px; height: 22px; border-color: transparent; background: transparent; color: rgba(255,255,255,0.9); font-size: 14px; }
+.cg-btn.selected:hover { background: rgba(255,255,255,0.16); }
 /* proposed workshop email under the name */
 .cemail { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: rgba(255,255,255,0.9); }
 .cemail > i { width: 15px; text-align: center; color: rgba(255,255,255,0.7); font-size: 11px; flex: none; }
@@ -424,7 +436,7 @@ textarea.input { resize: vertical; min-height: 90px; }
 .link-status[data-status="bad"] { color: #f87171; }
 
 /* skills row on the card front (max 3, single line) */
-.idcard-skills { display: flex; align-items: center; gap: 7px; min-height: 26px; flex: none; }
+.idcard-skills { display: flex; align-items: center; gap: 7px; min-height: 26px; flex: none; margin-bottom: 9px; }
 .cskill-lead { color: rgba(255,255,255,0.7); font-size: 12px; flex: none; width: 15px; text-align: center; }
 .cskill-tags { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
 .cskill {
