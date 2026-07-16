@@ -730,6 +730,8 @@ table.admin tr:last-child td { border-bottom: none; }
   box-shadow: 0 4px 14px rgba(97, 0, 255, 0.28);
 }
 .hive-teams .team-chip.on .tc-count { color: rgba(255, 255, 255, 0.85); }
+/* scaffold chips shown before any real team exists — dashed to read as placeholders */
+.hive-teams .team-chip.demo:not(.on) { border-style: dashed; color: var(--text-muted); }
 
 /* team focus: dim non-members, spotlight this team's octagons (kept after the
    hover-focus rules so an active team filter wins ties over plain focus). */

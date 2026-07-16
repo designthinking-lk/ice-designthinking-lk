@@ -309,16 +309,24 @@
     var participants = users.length - mentors;
     // Team filter chips — one per team, sorted by name (Team A, Team B, …).
     var teams = (d.teams || []).slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
+    // Before any teams exist, show a scaffold of 6 chips (Team A–F) so the
+    // filter is visible and interactive on the empty hive. Real teams replace
+    // the scaffold as soon as they're created.
+    if (!teams.length) {
+      teams = ['A', 'B', 'C', 'D', 'E', 'F'].map(function (l) {
+        return { id: 'demo-team-' + l, name: 'Team ' + l, members: [], demo: true };
+      });
+    }
     var activeTeam = null;
     teams.forEach(function (x) { if (x.id === state.teamFilter) activeTeam = x; });
     if (state.teamFilter && !activeTeam) state.teamFilter = null; // team went away
-    var teamBar = teams.length ? '<div class="hive-teams" id="hiveTeams">' +
+    var teamBar = '<div class="hive-teams" id="hiveTeams">' +
       teams.map(function (t) {
         var n = (t.members || []).length;
-        return '<button class="team-chip' + (t.id === state.teamFilter ? ' on' : '') + '" type="button" ' +
-          'data-action="filter-team" data-team="' + esc(t.id) + '">' + esc(t.name) +
+        return '<button class="team-chip' + (t.id === state.teamFilter ? ' on' : '') + (t.demo ? ' demo' : '') + '" type="button" ' +
+          'data-action="filter-team" data-team="' + esc(t.id) + '" data-name="' + esc(t.name) + '">' + esc(t.name) +
           '<span class="tc-count">' + n + '</span></button>';
-      }).join('') + '</div>' : '';
+      }).join('') + '</div>';
     return '<div class="hive">' + teamBar +
       '<div class="hive-legend">' +
       '<span><span class="dot mentor"></span>' + mentors + ' mentor' + (mentors === 1 ? '' : 's') + '</span>' +
@@ -1583,7 +1591,8 @@
       }
       case 'filter-team': {
         var tid = t.getAttribute('data-team');
-        state.teamFilter = state.teamFilter === tid ? null : tid;
+        var teamOn = state.teamFilter !== tid;
+        state.teamFilter = teamOn ? tid : null;
         // Update in place (no rebuild) so the octagons don't flash.
         $all('#hiveTeams .team-chip').forEach(function (c) {
           c.classList.toggle('on', c.getAttribute('data-team') === state.teamFilter);
@@ -1591,8 +1600,9 @@
         applyTeamFilter();
         var cap = $('.hive-caption');
         if (cap) {
-          var team = null;
-          (state.data.teams || []).forEach(function (x) { if (x.id === state.teamFilter) team = x; });
+          // Name comes from the chip so the caption works for the empty-state
+          // scaffold too (those teams aren't in state.data.teams).
+          var team = teamOn ? { name: t.getAttribute('data-name') } : null;
           cap.innerHTML = hiveCaptionText((state.data && state.data.users) || [], team);
         }
         break;
