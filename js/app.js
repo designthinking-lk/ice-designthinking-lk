@@ -1062,8 +1062,8 @@
     if (ov) ov.hidden = true;
   }
 
-  // ---- gender picker on the name line (icon-only: Male / Female) ----
-  function genderIcon(g) { return g === 'Female' ? 'fa-person-dress' : 'fa-person'; }
+  // ---- gender picker on the name line (round M / F badge) ----
+  function genderLetter(g) { return g === 'Female' ? 'F' : 'M'; }
 
   function renderGender() {
     var box = $('#cgender');
@@ -1073,13 +1073,13 @@
     var isMF = (val === 'Male' || val === 'Female');
     var open = box.getAttribute('data-open') === '1';
     if (isMF && !open) {
-      // collapsed: just the chosen icon; click to reselect
-      box.innerHTML = '<button type="button" class="cg-btn selected" data-action="gender-toggle" title="' + esc(val) + ' — tap to change"><i class="fa-solid ' + genderIcon(val) + '"></i></button>';
+      // collapsed: just the chosen letter; click to reselect
+      box.innerHTML = '<button type="button" class="cg-btn selected" data-action="gender-toggle" title="' + esc(val) + ' — tap to change">' + genderLetter(val) + '</button>';
     } else {
       // expanded: both options
       box.innerHTML =
-        '<button type="button" class="cg-btn' + (val === 'Male' ? ' on' : '') + '" data-action="gender-pick" data-gender="Male" title="Male"><i class="fa-solid fa-person"></i></button>' +
-        '<button type="button" class="cg-btn' + (val === 'Female' ? ' on' : '') + '" data-action="gender-pick" data-gender="Female" title="Female"><i class="fa-solid fa-person-dress"></i></button>';
+        '<button type="button" class="cg-btn' + (val === 'Male' ? ' on' : '') + '" data-action="gender-pick" data-gender="Male" title="Male">M</button>' +
+        '<button type="button" class="cg-btn' + (val === 'Female' ? ' on' : '') + '" data-action="gender-pick" data-gender="Female" title="Female">F</button>';
     }
   }
 
