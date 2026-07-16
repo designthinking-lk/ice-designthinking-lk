@@ -389,12 +389,11 @@ textarea.input { resize: vertical; min-height: 90px; }
   transition: background 0.15s, border-color 0.15s;
 }
 .cinput::placeholder { color: rgba(255,255,255,0.62); }
-.cinput:hover { background: rgba(255,255,255,0.16); }
+/* At rest every card field reads as plain printed text — no input box, filled or
+   empty. The editable box only appears on focus (and a faint hint on hover). */
+.cinput:not(:focus) { background: transparent; border-color: transparent; padding-left: 0; }
+.cinput:not(:focus):hover { background: rgba(255,255,255,0.08); }
 .cinput:focus { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.7); }
-/* filled + not focused → looks like plain printed text (inline-edit feel) */
-.cinput:not(:placeholder-shown):not(:focus) {
-  background: transparent; border-color: transparent; padding-left: 0;
-}
 /* keep browser autofill from painting a white box + dark text on the card */
 .cinput:-webkit-autofill,
 .cinput:-webkit-autofill:hover,
@@ -403,11 +402,21 @@ textarea.input { resize: vertical; min-height: 90px; }
   transition: background-color 100000s ease 0s;
 }
 .cname { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
-.cname-row { display: flex; gap: 8px; }
-.cname-row .cname { flex: 1; min-width: 0; }
+/* First + last sit side by side and size to their content (set in JS) so at rest
+   they read as one name — "Sankha Cooray" — not two fields spread across the card. */
+.cname-row { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.cname-row .cname { flex: 0 0 auto; width: auto; min-width: 3ch; }
+/* proposed workshop email under the name */
+.cemail { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: rgba(255,255,255,0.9); }
+.cemail > i { width: 15px; text-align: center; color: rgba(255,255,255,0.7); font-size: 11px; flex: none; }
+.cemail-addr { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cemail-status { flex: none; width: 14px; text-align: center; font-size: 11px; }
+.cemail-status[data-status="checking"] { color: rgba(255,255,255,0.7); }
+.cemail-status[data-status="ok"] { color: #4ade80; }
+.cemail-status[data-status="bad"] { color: #f87171; }
 .cfield { display: flex; align-items: center; gap: 8px; }
 .cfield > i { width: 15px; text-align: center; color: rgba(255,255,255,0.7); font-size: 12px; flex: none; }
-.cfield:has(.cinput:not(:placeholder-shown):not(:focus)) > i { color: rgba(255,255,255,0.9); }
+.cfield:has(.cinput:not(:focus)) > i { color: rgba(255,255,255,0.9); }
 /* live link check indicator at the end of each web field */
 .link-status { flex: none; width: 15px; text-align: center; font-size: 12px; }
 .link-status[data-status="checking"] { color: rgba(255,255,255,0.65); }

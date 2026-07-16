@@ -905,6 +905,9 @@
       '<input class="cinput cname" name="firstName" required maxlength="50" placeholder="First name" value="' + esc(firstName) + '">' +
       '<input class="cinput cname" name="lastName" maxlength="50" placeholder="Last name" value="' + esc(lastName) + '">' +
       '</div>' +
+      '<div class="cemail" id="proposedEmail" hidden><i class="fa-regular fa-envelope"></i>' +
+      '<span class="cemail-addr" id="cemailAddr"></span>' +
+      '<span class="cemail-status" id="cemailStatus" data-status=""></span></div>' +
       '<label class="cfield"><i class="fa-solid fa-building"></i><input class="cinput" name="affiliation" maxlength="70" placeholder="Affiliation — university, company" value="' + esc(u.affiliation || '') + '"></label>' +
       '<label class="cfield"><i class="fa-solid fa-lightbulb"></i><input class="cinput" name="expertise" maxlength="90" placeholder="Expertise — comma separated topics" value="' + esc(u.expertise || '') + '"></label>' +
       '</div></div>' +
@@ -1121,18 +1124,96 @@
     btn.classList.toggle('btn-disabled', !complete);
   }
 
+  // ---- name inputs size to content, so first+last read as one name ----
+  function sizeName(input) {
+    var len = (input.value || input.placeholder || '').length;
+    input.style.width = (len + 1) + 'ch';
+  }
+
+  // ---- proposed workshop email (firstname@designthinking.lk), checked live ----
+  // Mirrors the backend's assignment: firstname@ first, and if that's taken it
+  // auto-advances to firstname.lastname@ (then numbered) — showing the address the
+  // account will actually get. New registrations only.
+  var WORKSPACE_DOMAIN = 'designthinking.lk';
+  var emailSeq = 0;
+  var emailTimer = null;
+
+  function emailHandle(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+
+  function setProposedEmailUI(status, email) {
+    var box = $('#proposedEmail'), addr = $('#cemailAddr'), st = $('#cemailStatus');
+    if (!box) return;
+    box.hidden = false;
+    if (addr) addr.textContent = email;
+    if (st) {
+      st.setAttribute('data-status', status);
+      st.innerHTML =
+        status === 'checking' ? '<i class="fa-solid fa-spinner fa-spin"></i>' :
+        status === 'ok' ? '<i class="fa-solid fa-circle-check" title="Available"></i>' :
+        status === 'bad' ? '<i class="fa-solid fa-triangle-exclamation" title="Could not verify"></i>' : '';
+    }
+  }
+
+  function updateProposedEmail() {
+    var form = $('#profileForm');
+    if (!form || form.getAttribute('data-new') !== '1') return;
+    var box = $('#proposedEmail');
+    if (!box) return;
+    var fd = new FormData(form);
+    var f = emailHandle(fd.get('firstName'));
+    var l = emailHandle(fd.get('lastName'));
+    if (!f) { box.hidden = true; return; }
+    var candidates = [f];
+    if (l) { candidates.push(f + '.' + l); for (var n = 2; n <= 9; n++) candidates.push(f + '.' + l + n); }
+    else { for (var m = 2; m <= 9; m++) candidates.push(f + m); }
+    var seq = ++emailSeq;
+    setProposedEmailUI('checking', candidates[0] + '@' + WORKSPACE_DOMAIN);
+    (function tryNext(i) {
+      if (i >= candidates.length) return; // give up quietly
+      var email = candidates[i] + '@' + WORKSPACE_DOMAIN;
+      setProposedEmailUI('checking', email);
+      A.api('check_email', { email: email }).then(function (r) {
+        if (seq !== emailSeq) return; // superseded by a newer keystroke
+        if (r && r.available) setProposedEmailUI('ok', email);
+        else tryNext(i + 1); // taken → auto-advance to firstname.lastname, etc.
+      }).catch(function () {
+        if (seq !== emailSeq) return;
+        setProposedEmailUI('bad', email);
+      });
+    })(0);
+  }
+
   function afterProfileForm() {
     photoEd = null; // fresh form; only set when the user picks a new photo
-    linkStatus = {}; linkTimers = {}; linkSeq = {};
+    linkStatus = {}; linkTimers = {}; linkSeq = {}; emailSeq = 0;
     renderSkillSuggestions();
     var pform = $('#profileForm');
     if (pform) {
       wireLinkChecks(pform); // verify links + show ✓/⚠ (both new and edit forms)
-      if (pform.getAttribute('data-new') === '1') {
+      // Name inputs size to their content so first + last read as one name.
+      ['firstName', 'lastName'].forEach(function (nm) {
+        var inp = pform.querySelector('[name="' + nm + '"]');
+        if (!inp) return;
+        sizeName(inp);
+        inp.addEventListener('input', function () { sizeName(inp); });
+      });
+      var isNew = pform.getAttribute('data-new') === '1';
+      if (isNew) {
         // Autosave the fresh-registration form + re-evaluate the Join gate.
         var onEdit = function () { saveRegDraft(); updateJoinState(); };
         pform.addEventListener('input', onEdit);
         pform.addEventListener('change', onEdit);
+        // Debounced proposed-email lookup as the first/last name change.
+        var nameFields = ['firstName', 'lastName'];
+        nameFields.forEach(function (nm) {
+          var inp = pform.querySelector('[name="' + nm + '"]');
+          if (!inp) return;
+          inp.addEventListener('input', function () {
+            clearTimeout(emailTimer);
+            emailTimer = setTimeout(updateProposedEmail, 450);
+          });
+        });
+        updateProposedEmail(); // initial (e.g. restored draft)
       }
     }
     var vid = $('#profileForm [name="video"]');
