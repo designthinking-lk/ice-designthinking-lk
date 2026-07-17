@@ -64,8 +64,8 @@ button { font-family: inherit; }
 /* Half of a large hive octagon, vertically centred, its other half bleeding
    off-screen to the left — the nav options sit inside it. */
 .side-oct {
-  position: absolute; top: 50%; left: -160px; transform: translateY(-50%);
-  width: 320px; height: 320px; z-index: 0; pointer-events: none;
+  position: absolute; top: 50%; left: -140px; transform: translateY(-50%);
+  width: 280px; height: 280px; z-index: 0; pointer-events: none;
   clip-path: url(#octr);
   background: var(--bg-subtle);
 }
@@ -85,7 +85,7 @@ button { font-family: inherit; }
 .nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 /* vertically centre the main links: the top spacer and the admin item's
    auto margin absorb the free space equally (admin stays pinned at bottom) */
-.nav::before { content: ''; margin-top: auto; }
+.nav::before { content: ''; margin-top: auto; height: 43px; }
 .nav a {
   display: flex; align-items: center; gap: 11px; align-self: flex-start;
   padding: 10px 14px; border-radius: 10px;
@@ -96,7 +96,14 @@ button { font-family: inherit; }
 .nav a[hidden] { display: none; }
 /* the spacer's auto margin mirrors ::before's, so the links centre exactly
    regardless of which bottom items (chat/admin) are visible */
-.nav .nav-spacer { margin-top: auto; height: 52px; }
+.nav .nav-spacer { margin-top: auto; }
+/* fixed-height bottom zone — its contents can come and go without moving
+   the centred links */
+.nav-bottom {
+  flex: none; height: 96px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  gap: 4px; align-items: flex-start;
+}
 .nav a.nav-admin i { color: var(--text-muted); }
 .nav a:hover { background: var(--bg-subtle); color: var(--text); }
 .nav a.active {
@@ -329,6 +336,7 @@ textarea.input { resize: vertical; min-height: 90px; }
 .profile-edit {
   max-width: 1060px; margin: 0 auto; width: 100%;
   min-height: 100%; display: flex; flex-direction: column; justify-content: center;
+  padding-bottom: 60px; /* offset the app bar so the card centres on the screen */
 }
 /* stretch: the right column matches the card's height exactly */
 .pf-grid {

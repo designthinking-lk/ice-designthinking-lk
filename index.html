@@ -55,11 +55,15 @@
         <!-- always-present bottom spacer: keeps the links centred no matter
              which of the chat/admin items below are hidden -->
         <span class="nav-spacer" aria-hidden="true"></span>
-        <!-- chat & broadcasts — icon only, pinned to the bottom (news lives in its Broadcast tab) -->
-        <button type="button" class="nav-chat" id="navChatBtn" data-action="toggle-chat" title="Chat &amp; broadcasts" hidden>
-          <i class="fa-regular fa-comments"></i>
-        </button>
-        <a href="#/admin" data-nav="admin" id="navAdmin" class="nav-admin" title="Admin" hidden><i class="fa-solid fa-gear"></i><span>Admin</span></a>
+        <!-- fixed-height bottom zone: chat + admin appearing/disappearing must
+             never move the centred links above -->
+        <div class="nav-bottom">
+          <!-- chat & broadcasts — icon only (news lives in its Broadcast tab) -->
+          <button type="button" class="nav-chat" id="navChatBtn" data-action="toggle-chat" title="Chat &amp; broadcasts" hidden>
+            <i class="fa-regular fa-comments"></i>
+          </button>
+          <a href="#/admin" data-nav="admin" id="navAdmin" class="nav-admin" title="Admin" hidden><i class="fa-solid fa-gear"></i><span>Admin</span></a>
+        </div>
       </nav>
     </aside>
 
