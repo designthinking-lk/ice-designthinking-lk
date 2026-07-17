@@ -54,27 +54,25 @@ button { font-family: inherit; }
 
 /* ----------------------------------------------------------------- sidebar */
 .sidebar {
-  width: 64px; flex: none;
+  width: 200px; flex: none;
   display: flex; flex-direction: column; gap: 22px;
-  padding: 14px 12px 20px;
+  padding: 18px 16px 20px;
   background: var(--surface);
-  transition: width 0.18s ease;
+  position: relative; overflow: hidden; /* clips the octagon's off-screen half */
 }
-/* expanded only widens the rail — gap and vertical padding stay identical to
-   the collapsed state so items never shift vertically on toggle */
-.sidebar.expanded { width: 180px; padding: 14px 14px 20px; }
 
-.sidebar-toggle {
-  display: flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; flex: none;
-  border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
-  color: var(--text-body); font-size: 16px; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+/* Half of a large hive octagon, vertically centred, its other half bleeding
+   off-screen to the left — the nav options sit inside it. */
+.side-oct {
+  position: absolute; top: 50%; left: -220px; transform: translateY(-50%);
+  width: 440px; height: 440px; z-index: 0; pointer-events: none;
+  clip-path: polygon(29% 0, 71% 0, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0 71%, 0 29%);
+  background: var(--bg-subtle);
 }
-.sidebar-toggle:hover { background: var(--bg-subtle); border-color: var(--border-strong); color: var(--text); }
+/* real content paints above the octagon */
+.sidebar-top, .project-switcher, .nav { position: relative; z-index: 1; }
 
-/* brand text sits right next to the hamburger at the very top */
-.sidebar-top { display: flex; align-items: center; gap: 12px; flex: none; }
+.sidebar-top { display: flex; align-items: center; padding: 0 6px; flex: none; }
 .brand { display: flex; align-items: center; overflow: hidden; }
 .brand-name {
   font-family: var(--font-display); font-weight: 800; font-size: 21px;
@@ -123,17 +121,6 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .project-select:hover { border-color: var(--border-strong); color: var(--text); }
-
-/* collapsed: icons only */
-.sidebar:not(.expanded) .brand,
-.sidebar:not(.expanded) .nav a span,
-.sidebar:not(.expanded) .nav a .ext,
-.sidebar:not(.expanded) .nav .badge { display: none; }
-/* keep the switcher's slot (visibility, not display) so the nav sits at the
-   same vertical position collapsed and expanded */
-.sidebar:not(.expanded) .project-switcher { visibility: hidden; }
-.sidebar:not(.expanded) .sidebar-top { justify-content: center; }
-.sidebar:not(.expanded) .nav a { justify-content: center; padding: 10px 0; }
 
 /* ------------------------------------------------------ topbar auth actions */
 .avatar-circle-btn {
@@ -814,11 +801,21 @@ table.admin tr:last-child td { border-bottom: none; }
 /* large octagon preview in the hollow of the C (no outline) */
 .oct-preview {
   position: absolute; pointer-events: none; z-index: 20;
-  opacity: 0; transform: scale(0.9); transition: opacity 0.3s ease, transform 0.3s ease;
-  clip-path: var(--oct); filter: drop-shadow(0 14px 34px rgba(0, 0, 0, 0.6));
+  clip-path: var(--oct); transition: filter 0.3s ease;
 }
-.oct-preview.on { opacity: 1; transform: scale(1); }
-.oct-pin { width: 100%; height: 100%; position: relative; overflow: hidden; background: #111; clip-path: var(--oct); }
+/* idle: an empty slot octagon so the C's hollow always reads as filled */
+.oct-preview::before {
+  content: ""; position: absolute; inset: 0; clip-path: var(--oct);
+  background: var(--border-strong);
+}
+.oct-preview::after {
+  content: ""; position: absolute; inset: 2px; clip-path: var(--oct);
+  background: var(--bg);
+}
+.oct-preview.on { filter: drop-shadow(0 14px 34px rgba(0, 0, 0, 0.6)); }
+.oct-preview .oct-pin { opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; transform: scale(0.94); }
+.oct-preview.on .oct-pin { opacity: 1; transform: scale(1); }
+.oct-pin { width: 100%; height: 100%; position: relative; z-index: 1; overflow: hidden; background: #111; clip-path: var(--oct); }
 .oct-pin img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .oct-pvname {
   position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 12px 12%;
@@ -957,7 +954,7 @@ body.chat-open .nav-chat { background: var(--color-neutral-100); color: #fff; }
 
 /* Floating pane: full height, ~1/4 of the screen, capped on large displays */
 .commpane {
-  position: fixed; top: 0; bottom: 0; left: 64px; z-index: 90;
+  position: fixed; top: 0; bottom: 0; left: 200px; z-index: 90;
   width: 25vw; min-width: 320px; max-width: 430px;
   background: var(--surface); border-right: 1px solid var(--border);
   box-shadow: var(--shadow-lg);

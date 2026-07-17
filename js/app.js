@@ -603,7 +603,7 @@
     var stage = $('#hiveStage'), word = $('#word');
     if (!stage || !word || !word.__w) return;
     var ww = word.__w, wh = word.__h;
-    var pad = 48;
+    var pad = 24; // tight padding — the fixed sidebar shouldn't shrink the ICE
     var s = Math.min((stage.clientWidth - pad) / ww, (stage.clientHeight - pad) / wh, 1.5);
     if (!(s > 0) || !isFinite(s)) return;
     // Scale from the top-left and shrink the layout box to the scaled size, so the
@@ -2302,24 +2302,6 @@
 
   window.addEventListener('hashchange', route);
   window.addEventListener('resize', fitWordmark);
-
-  // Sidebar collapse/expand — collapsed (icons only) by default; persisted.
-  (function initSidebar() {
-    var sidebar = $('#sidebar');
-    var toggle = $('#sidebarToggle');
-    if (!sidebar || !toggle) return;
-    if (localStorage.getItem('ice.sidebar') === 'expanded') sidebar.classList.add('expanded');
-    toggle.addEventListener('click', function () {
-      var expanded = sidebar.classList.toggle('expanded');
-      localStorage.setItem('ice.sidebar', expanded ? 'expanded' : 'collapsed');
-      toggle.setAttribute('aria-label', expanded ? 'Collapse menu' : 'Expand menu');
-    });
-    // The content area resizes when the sidebar expands/collapses; rebuild the
-    // wordmark once the width transition settles so it stays centred.
-    sidebar.addEventListener('transitionend', function (e) {
-      if (e.propertyName === 'width' && $('#word')) buildWordmark();
-    });
-  })();
 
   (function boot() {
     // ?project=<slug> deep-links into a specific project (e.g. a next-year
