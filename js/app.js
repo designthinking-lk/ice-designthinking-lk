@@ -1160,8 +1160,14 @@
       '<div class="persona" id="personaPanel"><p class="persona-text" id="personaText">' + esc(personaDefaultText(isNew)) + '</p></div>' +
 
       '<div class="form-status" id="profileStatus"></div>' +
-      // for new registrations the button only appears once the card is complete
-      '<div class="form-actions" id="joinWrap"' + (isNew ? ' hidden' : '') + '><button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button></div>' +
+      // for new registrations this block only appears once the card is
+      // complete; the consent box must be ticked before the button enables
+      '<div class="join-block" id="joinWrap"' + (isNew ? ' hidden' : '') + '>' +
+      (isNew
+        ? '<label class="consent"><input type="checkbox" id="consentBox"> I agree that this information is stored by the organizers and that my profile is shown publicly to the workshop’s mentors and participants.</label>'
+        : '') +
+      '<div class="form-actions"><button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button></div>' +
+      '</div>' +
       '</div>' + // .pf-right
       '</form>';
   }
@@ -1458,11 +1464,14 @@
     var videoOk = !!ytId(fd.get('video') || ($('#ytInput') && $('#ytInput').value) || '');
     var linksOk = LINK_FIELDS.every(function (f) { return linkStatus[f] === 'ok'; });
     var complete = photoOk && textOk && skillsOk && videoOk && linksOk;
-    btn.disabled = !complete;
-    btn.classList.toggle('btn-disabled', !complete);
-    // the "Let's build something amazing" button only appears once complete
+    // the join block only appears once complete; the button stays disabled
+    // until the consent box is ticked
     var wrap = $('#joinWrap');
     if (wrap) wrap.hidden = !complete;
+    var consent = $('#consentBox');
+    var ready = complete && (!consent || consent.checked);
+    btn.disabled = !ready;
+    btn.classList.toggle('btn-disabled', !ready);
   }
 
   // ---- name inputs size to their exact rendered text, so first + last read as

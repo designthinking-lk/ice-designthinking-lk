@@ -60,7 +60,9 @@ button { font-family: inherit; }
   background: #fff; border-right: 1px solid var(--border);
   transition: width 0.18s ease;
 }
-.sidebar.expanded { width: 180px; gap: 26px; padding: 14px 14px 20px; }
+/* expanded only widens the rail — gap and vertical padding stay identical to
+   the collapsed state so items never shift vertically on toggle */
+.sidebar.expanded { width: 180px; padding: 14px 14px 20px; }
 
 .sidebar-toggle {
   display: flex; align-items: center; justify-content: center;
@@ -122,10 +124,12 @@ button { font-family: inherit; }
 
 /* collapsed: icons only */
 .sidebar:not(.expanded) .brand,
-.sidebar:not(.expanded) .project-switcher,
 .sidebar:not(.expanded) .nav a span,
 .sidebar:not(.expanded) .nav a .ext,
 .sidebar:not(.expanded) .nav .badge { display: none; }
+/* keep the switcher's slot (visibility, not display) so the nav sits at the
+   same vertical position collapsed and expanded */
+.sidebar:not(.expanded) .project-switcher { visibility: hidden; }
 .sidebar:not(.expanded) .sidebar-top { justify-content: center; }
 .sidebar:not(.expanded) .nav a { justify-content: center; padding: 10px 0; }
 
@@ -338,19 +342,27 @@ textarea.input { resize: vertical; min-height: 90px; }
 }
 /* no outer margins — the card defines the row's top and bottom edges */
 .pf-left .idcard-scene { margin: 0; }
-.pf-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; text-align: center; }
+.pf-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
 /* live persona — Claude's read of the card, refreshed as it fills in.
-   Centred in the space above the button for symmetry with the card. */
-.persona { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 8px; }
+   Left-aligned, vertically centred in the space above the join block. */
+.persona { flex: 1; display: flex; align-items: center; padding: 0 2px; }
 .persona-text {
   margin: 0; font-size: 16px; line-height: 1.75; color: var(--text-body);
   transition: opacity 0.3s;
 }
 .persona-text.thinking { opacity: 0.45; }
 .pf-right .form-status { flex: none; }
-/* button centred, its bottom edge on the card's bottom edge */
-.pf-right .form-actions { flex: none; justify-content: center; }
+/* consent + button pinned at the bottom — the button's bottom edge sits on
+   the card's bottom edge */
+.join-block { flex: none; display: flex; flex-direction: column; gap: 14px; }
+.join-block[hidden] { display: none; }
+.consent {
+  display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+  font-size: 13.5px; line-height: 1.55; color: var(--text-body);
+}
+.consent input { margin-top: 3px; flex: none; cursor: pointer; }
+.pf-right .form-actions { flex: none; }
 .form-loading {
   display: flex; align-items: center; gap: 12px; color: var(--text-muted);
   padding: 60px 0; font-size: 15px;
