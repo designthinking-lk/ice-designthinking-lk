@@ -1721,9 +1721,27 @@
       '<button class="btn btn-gradient" data-action="sign-in"><i class="fa-brands fa-google"></i>Sign in with Google</button></div>';
   }
 
+  // Placeholder showcase until teams publish real projects — 6 cards at the
+  // ID-card aspect ratio, each with its own backdrop.
+  var DEMO_PROJECTS = [
+    { t: 'Smart Mobility', d: 'Rethinking how the city moves — accessible transit for everyone.' },
+    { t: 'CareConnect', d: 'Bridging patients and caregivers with human-centred health tools.' },
+    { t: 'AgriSense', d: 'Data-driven decisions for smallholder farmers.' },
+    { t: 'EduPlay', d: 'Learning through play — creative classrooms beyond the textbook.' },
+    { t: 'Circular Living', d: 'Designing waste out of everyday life, one household at a time.' },
+    { t: 'FinAccess', d: 'Everyday finance for the unbanked and underserved.' },
+  ];
+
   function viewProjects() {
     // public — like People
-    return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-diagram-project"></i>Projects are coming soon.<br>This is where teams will showcase what they are building.</div>';
+    return '<div class="projects-wrap"><div class="projects-grid">' +
+      DEMO_PROJECTS.map(function (p, i) {
+        return '<article class="project-card pc-' + (i + 1) + '">' +
+          '<span class="pc-tag">Project</span>' +
+          '<h3>' + esc(p.t) + '</h3>' +
+          '<p>' + esc(p.d) + '</p>' +
+          '</article>';
+      }).join('') + '</div></div>';
   }
 
   function viewTools() {
