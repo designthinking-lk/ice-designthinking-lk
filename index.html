@@ -47,12 +47,14 @@
       <div class="project-switcher" id="projectSwitcher" hidden></div>
       <nav class="nav" id="nav">
         <a href="#/" data-nav="home" title="People"><i class="fa-solid fa-users"></i><span>People</span></a>
-        <a href="#/teams" data-nav="teams" title="Teams"><i class="fa-solid fa-people-group"></i><span>Teams</span></a>
-        <a href="#/projects" data-nav="projects" id="navProjects" title="Projects" hidden><i class="fa-solid fa-diagram-project"></i><span>Projects</span></a>
+        <a href="#/projects" data-nav="projects" id="navProjects" title="Projects"><i class="fa-solid fa-diagram-project"></i><span>Projects</span></a>
         <a href="#/tools" data-nav="tools" id="navTools" title="Tools" hidden><i class="fa-solid fa-toolbox"></i><span>Tools</span></a>
         <a href="https://chat.google.com" target="_blank" rel="noopener" id="navMessages" title="Messages" hidden>
           <i class="fa-solid fa-message"></i><span>Messages</span><i class="fa-solid fa-arrow-up-right-from-square ext"></i>
         </a>
+        <!-- always-present bottom spacer: keeps the links centred no matter
+             which of the chat/admin items below are hidden -->
+        <span class="nav-spacer" aria-hidden="true"></span>
         <!-- chat & broadcasts — icon only, pinned to the bottom (news lives in its Broadcast tab) -->
         <button type="button" class="nav-chat" id="navChatBtn" data-action="toggle-chat" title="Chat &amp; broadcasts" hidden>
           <i class="fa-regular fa-comments"></i>

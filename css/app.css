@@ -94,10 +94,9 @@ button { font-family: inherit; }
 }
 .nav a i { font-size: 14px; width: 18px; text-align: center; color: var(--text-faint); flex: none; }
 .nav a[hidden] { display: none; }
-/* Chat pins to the bottom; Admin sits right below it. If the chat button is
-   hidden (not registered), Admin takes the auto margin instead. */
-.nav .nav-chat { margin-top: auto; }
-.nav .nav-chat[hidden] + a.nav-admin { margin-top: auto; }
+/* the spacer's auto margin mirrors ::before's, so the links centre exactly
+   regardless of which bottom items (chat/admin) are visible */
+.nav .nav-spacer { margin-top: auto; }
 .nav a.nav-admin i { color: var(--text-muted); }
 .nav a:hover { background: var(--bg-subtle); color: var(--text); }
 .nav a.active {
@@ -866,7 +865,7 @@ table.admin tr:last-child td { border-bottom: none; }
 /* -------------------------------------------------------------- chat pane */
 .chat-toggle,
 .theme-toggle {
-  width: 38px; height: 38px; flex: none; border-radius: 10px;
+  width: 38px; height: 38px; flex: none; border-radius: 999px;
   border: 1px solid var(--border); background: var(--surface); cursor: pointer;
   color: var(--text-body); font-size: 15px; display: inline-flex;
   align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s, color 0.15s;

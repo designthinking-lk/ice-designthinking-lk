@@ -162,12 +162,10 @@
     renderProjectSwitcher(d);
     var actions = $('#topbarActions');
     var navMsg = $('#navMessages');
-    // Projects & Tools are for logged-in users; Admin only for admins.
+    // People & Projects are public; Tools needs sign-in; Admin only for admins.
     var loggedIn = signedIn();
-    var navProjects = $('#navProjects');
     var navTools = $('#navTools');
     var navAdmin = $('#navAdmin');
-    if (navProjects) navProjects.hidden = !loggedIn;
     if (navTools) navTools.hidden = !loggedIn;
     if (navAdmin) navAdmin.hidden = !d.isAdmin;
     if (signedIn() && d.me) {
@@ -1728,7 +1726,7 @@
   }
 
   function viewProjects() {
-    if (!signedIn()) return signInGate('projects');
+    // public — like People
     return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-diagram-project"></i>Projects are coming soon.<br>This is where teams will showcase what they are building.</div>';
   }
 
@@ -1843,7 +1841,9 @@
   var routes = [
     { re: /^#\/?$/, view: viewHome },
     { re: /^#\/profile\/([\w-]+)$/, view: viewProfile },
-    { re: /^#\/teams$/, view: viewTeams },
+    // the teams listing is gone — People (with its team filter) covers it;
+    // team detail pages remain reachable from profiles
+    { re: /^#\/teams$/, view: function () { location.hash = '#/'; return ''; } },
     { re: /^#\/team\/([\w-]+)$/, view: viewTeam },
     { re: /^#\/projects$/, view: viewProjects },
     { re: /^#\/tools$/, view: viewTools },
