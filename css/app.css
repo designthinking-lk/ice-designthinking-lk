@@ -1081,9 +1081,11 @@ body.hive-full .hive .oct { pointer-events: auto; }
 
 /* admin: tabbed, non-scrolling shell — the active section scrolls inside;
    the tab bar sits at the footer on the Admin item's line */
-.admin-wrap { height: 100%; display: flex; flex-direction: column; gap: 16px; max-width: 1100px; margin: 0 auto; width: 100%; }
+.admin-wrap { height: 100%; display: flex; flex-direction: column; gap: 16px; width: 100%; }
+.admin-tabview > * { max-width: 1100px; margin-left: auto; margin-right: auto; }
 .admin-tabs {
-  flex: none; align-self: center; display: flex; gap: 4px;
+  flex: none; align-self: flex-start; margin-bottom: -4px;
+  display: flex; gap: 4px;
   background: var(--bg-subtle); border-radius: 999px; padding: 4px;
 }
 .admin-tabs .comm-tab { flex: none; padding: 7px 20px; }
@@ -1098,6 +1100,7 @@ body.hive-full .hive .oct { pointer-events: auto; }
 
 /* inline new-project card under the projects list */
 .new-project-card {
+  max-width: none; width: 100%;
   margin-top: 18px; padding: 20px;
   border: 1px solid var(--border); border-radius: var(--radius-md);
   background: var(--bg-subtle);
