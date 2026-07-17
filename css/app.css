@@ -54,7 +54,7 @@ button { font-family: inherit; }
 
 /* ----------------------------------------------------------------- sidebar */
 .sidebar {
-  width: 200px; flex: none;
+  width: 176px; flex: none;
   display: flex; flex-direction: column; gap: 22px;
   padding: 18px 16px 20px;
   background: var(--surface);
@@ -64,9 +64,9 @@ button { font-family: inherit; }
 /* Half of a large hive octagon, vertically centred, its other half bleeding
    off-screen to the left — the nav options sit inside it. */
 .side-oct {
-  position: absolute; top: 50%; left: -220px; transform: translateY(-50%);
-  width: 440px; height: 440px; z-index: 0; pointer-events: none;
-  clip-path: polygon(29% 0, 71% 0, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0 71%, 0 29%);
+  position: absolute; top: 50%; left: -190px; transform: translateY(-50%);
+  width: 380px; height: 380px; z-index: 0; pointer-events: none;
+  clip-path: url(#octr);
   background: var(--bg-subtle);
 }
 /* real content paints above the octagon */
@@ -87,8 +87,8 @@ button { font-family: inherit; }
    auto margin absorb the free space equally (admin stays pinned at bottom) */
 .nav::before { content: ''; margin-top: auto; }
 .nav a {
-  display: flex; align-items: center; gap: 11px;
-  padding: 10px 13px; border-radius: 10px;
+  display: flex; align-items: center; gap: 11px; align-self: flex-start;
+  padding: 10px 14px; border-radius: 10px;
   color: var(--text-body); font-weight: 500; font-size: 14.5px;
   position: relative; white-space: nowrap; overflow: hidden;
 }
@@ -746,7 +746,7 @@ table.admin tr:last-child td { border-bottom: none; }
 /* Full-bleed dark stage inside the light app shell. Tiles are octagons on a
    square grid arranged to spell ICE; greyscale photos + duotone tint by role. */
 .hive {
-  --oct: polygon(29% 0, 71% 0, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0 71%, 0 29%);
+  --oct: url(#octr); /* rounded-corner octagon (SVG clip in index.html) */
   --accent: #6100FF; --accent2: #00D7EE;
   position: absolute; inset: 0; overflow: hidden; color: var(--text);
   /* Light background to match the other sections (dark theme comes later). */
@@ -942,7 +942,7 @@ body.chat-open .chat-toggle { background: var(--color-accent-light); border-colo
    Broadcast tab) */
 .nav-chat {
   display: flex; align-items: center; justify-content: center;
-  width: 100%; padding: 10px 0; border-radius: 10px;
+  align-self: flex-start; width: auto; padding: 10px 15px; border-radius: 10px;
   border: none; background: none; cursor: pointer;
   color: var(--text-body); font-size: 16px;
   transition: background 0.15s, color 0.15s;
@@ -954,7 +954,7 @@ body.chat-open .nav-chat { background: var(--color-neutral-100); color: #fff; }
 
 /* Floating pane: full height, ~1/4 of the screen, capped on large displays */
 .commpane {
-  position: fixed; top: 0; bottom: 0; left: 200px; z-index: 90;
+  position: fixed; top: 0; bottom: 0; left: 176px; z-index: 90;
   width: 25vw; min-width: 320px; max-width: 430px;
   background: var(--surface); border-right: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
@@ -999,3 +999,13 @@ body.chat-open .nav-chat { background: var(--color-neutral-100); color: #fff; }
   position: static; display: flex; flex-wrap: nowrap; gap: 8px;
   justify-content: flex-start; pointer-events: auto;
 }
+
+/* People view: the hive spans the full window, over the rail — the letters
+   can slide fully left and paint ABOVE the sidebar's half octagon, with the
+   letter I's cavity leaving room for the nav. The container ignores the
+   pointer so the nav stays clickable; tiles re-enable it themselves. */
+body.hive-full .hive {
+  position: fixed; top: 60px; left: 0; right: 0; bottom: 0;
+  background: transparent; pointer-events: none;
+}
+body.hive-full .hive .oct { pointer-events: auto; }

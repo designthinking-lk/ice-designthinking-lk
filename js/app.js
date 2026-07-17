@@ -201,11 +201,15 @@
       }
     }
     // team filter chips live in the app bar, on the People view only
+    var isHome = /^#\/?$/.test(location.hash || '#/');
     var tb = $('#topbarTeams');
     if (tb) {
-      var chips = /^#\/?$/.test(location.hash || '#/') ? teamChipsHtml() : '';
+      var chips = isHome ? teamChipsHtml() : '';
       if (tb.innerHTML !== chips) tb.innerHTML = chips;
     }
+    // on People, the hive goes full-bleed over the rail (letters above the
+    // half octagon; the I's cavity hosts the nav)
+    document.body.classList.toggle('hive-full', isHome);
     // active nav
     var hash = location.hash || '#/';
     $all('#nav a').forEach(function (a) {

@@ -27,6 +27,14 @@
   <script>try{if(localStorage.getItem('ice.theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 </head>
 <body>
+  <!-- rounded-corner octagon clip — scales with any element (objectBoundingBox) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <clipPath id="octr" clipPathUnits="objectBoundingBox">
+        <path d="M 0.2476 0.0424 Q 0.29 0 0.35 0 L 0.65 0 Q 0.71 0 0.7524 0.0424 L 0.9576 0.2476 Q 1 0.29 1 0.35 L 1 0.65 Q 1 0.71 0.9576 0.7524 L 0.7524 0.9576 Q 0.71 1 0.65 1 L 0.35 1 Q 0.29 1 0.2476 0.9576 L 0.0424 0.7524 Q 0 0.71 0 0.65 L 0 0.35 Q 0 0.29 0.0424 0.2476 Z"/>
+      </clipPath>
+    </defs>
+  </svg>
   <div class="shell">
     <aside class="sidebar" id="sidebar">
       <!-- decorative half octagon: same shape family as the hive tiles, its
