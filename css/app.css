@@ -760,7 +760,7 @@ table.admin tr:last-child td { border-bottom: none; }
   background: var(--bg);
 }
 .hive-legend {
-  position: absolute; bottom: 16px; left: 0; right: 0; z-index: 6;
+  position: absolute; bottom: 31px; left: 0; right: 0; z-index: 6;
   display: flex; gap: 18px; justify-content: center; font-size: 13px; color: var(--text-muted);
 }
 .hive-legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; }
@@ -796,7 +796,7 @@ table.admin tr:last-child td { border-bottom: none; }
 /* placeholder slot — an empty octagon outline, waiting to be filled.
    The shape (all 8 sides) is drawn as a ring: a filled octagon in the outline
    colour, with a slightly smaller page-coloured octagon punched out via ::before. */
-.oct.empty { cursor: default; }
+.oct.empty { cursor: default; border: none; border-radius: 0; } /* .empty's dashed box styling must not leak onto tiles */
 /* soft solid fill — no outline ring around the slots */
 .oct.empty .oct-in { background: var(--bg-subtle); box-shadow: none; }
 .oct.empty .oct-in::after { display: none; }
@@ -999,7 +999,7 @@ body.chat-open .nav-chat { color: var(--color-accent); filter: drop-shadow(0 0 6
 
 /* team chips relocated to the app bar (People view only) */
 .topbar-teams {
-  position: absolute; left: 50%; transform: translateX(-50%);
+  position: absolute; left: calc(50vw - 176px); transform: translateX(-50%);
   max-width: 62%; min-width: 0; overflow-x: auto; display: flex; scrollbar-width: none;
 }
 .topbar-teams::-webkit-scrollbar { display: none; }
