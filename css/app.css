@@ -57,7 +57,7 @@ button { font-family: inherit; }
   width: 64px; flex: none;
   display: flex; flex-direction: column; gap: 22px;
   padding: 14px 12px 20px;
-  background: var(--surface); border-right: 1px solid var(--border);
+  background: var(--surface);
   transition: width 0.18s ease;
 }
 /* expanded only widens the rail — gap and vertical padding stay identical to
@@ -362,6 +362,9 @@ textarea.input { resize: vertical; min-height: 90px; }
   font-size: 13.5px; line-height: 1.55; color: var(--text-body);
 }
 .consent input { margin-top: 3px; flex: none; cursor: pointer; }
+/* inactive until the card is complete */
+.consent:has(input:disabled) { opacity: 0.5; cursor: default; }
+.consent input:disabled { cursor: default; }
 .pf-right .form-actions { flex: none; }
 .form-loading {
   display: flex; align-items: center; gap: 12px; color: var(--text-muted);
@@ -930,3 +933,7 @@ body.chat-open .chat-toggle { background: var(--color-accent-light); border-colo
    near-black, which vanishes against dark surfaces. */
 :root[data-theme="dark"] .nav a.active { background: #2B2E36; }
 :root[data-theme="dark"] .search:focus-within { box-shadow: 0 0 0 3px rgba(144, 77, 255, 0.18); }
+/* app bar + side pane blend seamlessly into the page background at night
+   (in day mode they're all white already) */
+:root[data-theme="dark"] .topbar,
+:root[data-theme="dark"] .sidebar { background: var(--bg); }

@@ -1173,11 +1173,12 @@
       '<div class="persona" id="personaPanel"><p class="persona-text" id="personaText">' + esc(personaDefaultText(isNew)) + '</p></div>' +
 
       '<div class="form-status" id="profileStatus"></div>' +
-      // for new registrations this block only appears once the card is
-      // complete; the consent box must be ticked before the button enables
-      '<div class="join-block" id="joinWrap"' + (isNew ? ' hidden' : '') + '>' +
+      // always visible: the consent row activates once the card is complete,
+      // and the button activates once consent is ticked. The tick itself is
+      // never persisted anywhere — each registration asks fresh.
+      '<div class="join-block" id="joinWrap">' +
       (isNew
-        ? '<label class="consent"><input type="checkbox" id="consentBox"> I agree that this information is stored by the organizers and that my profile is shown publicly to the workshop’s mentors and participants.</label>'
+        ? '<label class="consent"><input type="checkbox" id="consentBox" disabled> I agree that this information is stored by the organizers and that my profile is shown publicly to the workshop’s mentors and participants.</label>'
         : '') +
       '<div class="form-actions"><button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button></div>' +
       '</div>' +
@@ -1477,11 +1478,14 @@
     var videoOk = !!ytId(fd.get('video') || ($('#ytInput') && $('#ytInput').value) || '');
     var linksOk = LINK_FIELDS.every(function (f) { return linkStatus[f] === 'ok'; });
     var complete = photoOk && textOk && skillsOk && videoOk && linksOk;
-    // the join block only appears once complete; the button stays disabled
-    // until the consent box is ticked
-    var wrap = $('#joinWrap');
-    if (wrap) wrap.hidden = !complete;
+    // staged activation: complete card → consent unlocks; consent ticked →
+    // button unlocks. Consent is never persisted, and it un-ticks if the
+    // card drops back to incomplete.
     var consent = $('#consentBox');
+    if (consent) {
+      consent.disabled = !complete;
+      if (!complete && consent.checked) consent.checked = false;
+    }
     var ready = complete && (!consent || consent.checked);
     btn.disabled = !ready;
     btn.classList.toggle('btn-disabled', !ready);
