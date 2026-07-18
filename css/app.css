@@ -957,24 +957,27 @@ body.chat-open .chat-toggle { background: var(--color-accent-light); border-colo
 :root[data-theme="dark"] .sidebar { background: var(--bg); }
 
 /* ------------------------------------------------- chat & broadcasts pane */
-/* Icon-only chat button at the sidebar's bottom (news lives in its
-   Broadcast tab) */
-.nav-chat {
+/* Floating chat button, bottom-right corner (news lives in its Broadcast tab) */
+.chat-fab {
+  position: fixed; right: 22px; bottom: 22px; z-index: 55;
+  width: 52px; height: 52px; border-radius: 999px; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  align-self: flex-start; width: auto; padding: 10px 15px; border-radius: 10px;
-  border: none; background: none; cursor: pointer;
-  color: var(--text-body); font-size: 16px;
-  transition: background 0.15s, color 0.15s;
+  background: linear-gradient(135deg, #00D7EE 0%, #2E6BF6 55%, #6100FF 100%);
+  color: #fff; font-size: 20px;
+  box-shadow: 0 6px 20px -4px rgba(97, 0, 255, 0.5);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-.nav-chat:hover { background: var(--bg-subtle); color: var(--text); }
-.nav-chat[hidden] { display: none; }
-body.chat-open .nav-chat { color: var(--color-accent); filter: drop-shadow(0 0 6px rgba(97, 0, 255, 0.45)); }
+.chat-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 26px -6px rgba(97, 0, 255, 0.6); }
+.chat-fab:active { transform: translateY(0); }
+.chat-fab[hidden] { display: none; }
+/* the open pane owns the right edge — its close button takes over */
+body.chat-open .chat-fab { display: none; }
 
 /* Floating pane: full height, ~1/4 of the screen, capped on large displays */
 .commpane {
-  position: fixed; top: 0; bottom: 0; left: 176px; z-index: 90;
+  position: fixed; top: 0; bottom: 0; right: 0; z-index: 90;
   width: 25vw; min-width: 320px; max-width: 430px;
-  background: var(--surface); border-right: 1px solid var(--border);
+  background: var(--surface); border-left: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
   display: flex; flex-direction: column;
 }
@@ -1038,7 +1041,6 @@ body.hive-full .hive .oct { pointer-events: auto; }
   0%, 100% { transform: scale(1); text-shadow: 0 0 8px rgba(0, 215, 238, 0.35); }
   50% { transform: scale(1.045); text-shadow: 0 0 16px rgba(0, 215, 238, 0.65); }
 }
-:root[data-theme="dark"] body.chat-open .nav-chat { filter: drop-shadow(0 0 6px rgba(0, 215, 238, 0.5)); }
 /* cyan is a light hue — solid accent buttons need dark text at night */
 :root[data-theme="dark"] .btn-primary,
 :root[data-theme="dark"] .btn-primary:hover { color: #08272B; }

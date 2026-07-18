@@ -161,7 +161,6 @@
     if (brandName) brandName.innerHTML = brandHtml(false);
     renderProjectSwitcher(d);
     var actions = $('#topbarActions');
-    var navMsg = $('#navMessages');
     // People & Projects are public; Tools needs sign-in; Admin only for admins.
     var loggedIn = signedIn();
     var navTools = $('#navTools');
@@ -169,18 +168,15 @@
     if (navTools) navTools.hidden = !loggedIn;
     if (navAdmin) navAdmin.hidden = !d.isAdmin;
     if (signedIn() && d.me) {
-      navMsg.hidden = false;
       actions.innerHTML =
         '<button class="avatar-circle-btn" data-action="user-menu" aria-label="Account" title="' + esc(d.me.name) + '">' +
         avatar(d.me, 'avatar-sm') + '</button>';
     } else if (signedIn()) {
-      navMsg.hidden = true;
       actions.innerHTML =
         '<a class="btn btn-gradient btn-sm" href="#/register"><i class="fa-regular fa-id-card"></i>Complete registration</a>' +
         '<button class="avatar-circle-btn" data-action="guest-menu" aria-label="Account" title="Account">' +
         '<span class="avatar-guest"><i class="fa-solid fa-user"></i></span></button>';
     } else {
-      navMsg.hidden = true;
       actions.innerHTML = '<button class="btn btn-primary btn-sm" data-action="sign-in"><i class="fa-brands fa-google"></i>Sign in</button>';
     }
     // chat & broadcasts pane — for registered participants (DMs need a
@@ -2298,7 +2294,13 @@
         }
         var payload = collectProfile(form);
         var isNew = form.getAttribute('data-new') === '1';
-        await A.api(isNew ? 'register' : 'update_profile', payload);
+        try {
+          await A.api(isNew ? 'register' : 'update_profile', payload);
+        } catch (err) {
+          // A retried register can land twice: 'exists' means the first
+          // attempt succeeded and only its response was lost — carry on.
+          if (!(isNew && err.code === 'exists')) throw err;
+        }
         if (isNew) clearRegDraft();
         photoEd = null;
         await refresh();

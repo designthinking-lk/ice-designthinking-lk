@@ -44,18 +44,36 @@
 
   function cacheKey() { return 'ice.bootstrap.' + getProject(); }
 
-  /** Core call. Returns parsed JSON; throws Error with .code on failure. */
+  /** Core call. Returns parsed JSON; throws Error with .code on failure.
+   * Apps Script's edge occasionally serves a one-off error page without CORS
+   * headers (surfaces as TypeError "Failed to fetch") — identical requests
+   * succeed moments later, so network-level failures get retried. Server-side
+   * guards make the write actions safe to repeat (register → 'exists', etc.). */
   async function api(action, params) {
     var body = Object.assign({ action: action }, params || {});
     if (!body.project) body.project = getProject();
     var token = getToken();
     if (token && !body.token) body.token = token;
-    var res = await fetch(C.API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body),
-      redirect: 'follow',
-    });
+    var payload = JSON.stringify(body);
+    var res = null;
+    for (var attempt = 0; ; attempt++) {
+      try {
+        res = await fetch(C.API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: payload,
+          redirect: 'follow',
+        });
+        break;
+      } catch (netErr) {
+        if (attempt >= 2) {
+          var e = new Error('Could not reach the server — check your connection and try again.');
+          e.code = 'network';
+          throw e;
+        }
+        await new Promise(function (r) { setTimeout(r, 600 * (attempt + 1)); });
+      }
+    }
     var data = await res.json();
     if (data && data.ok === false) {
       if (data.error === 'auth') setToken(null); // expired/invalid token

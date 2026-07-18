@@ -22,8 +22,8 @@
         crossorigin="anonymous" referrerpolicy="no-referrer">
 
   <!-- bump ?v= on any asset change: GitHub Pages caches for 10 min -->
-  <link rel="stylesheet" href="css/theme.css?v=21">
-  <link rel="stylesheet" href="css/app.css?v=21">
+  <link rel="stylesheet" href="css/theme.css?v=22">
+  <link rel="stylesheet" href="css/app.css?v=22">
   <!-- apply the saved theme before first paint so night mode never flashes -->
   <script>try{if(localStorage.getItem('ice.theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 </head>
@@ -50,19 +50,12 @@
         <a href="#/" data-nav="home" title="People"><i class="fa-solid fa-users"></i><span>People</span></a>
         <a href="#/projects" data-nav="projects" id="navProjects" title="Projects"><i class="fa-solid fa-diagram-project"></i><span>Projects</span></a>
         <a href="#/tools" data-nav="tools" id="navTools" title="Tools" hidden><i class="fa-solid fa-toolbox"></i><span>Tools</span></a>
-        <a href="https://chat.google.com" target="_blank" rel="noopener" id="navMessages" title="Messages" hidden>
-          <i class="fa-solid fa-message"></i><span>Messages</span><i class="fa-solid fa-arrow-up-right-from-square ext"></i>
-        </a>
         <!-- always-present bottom spacer: keeps the links centred no matter
-             which of the chat/admin items below are hidden -->
+             whether the admin item below is hidden -->
         <span class="nav-spacer" aria-hidden="true"></span>
-        <!-- fixed-height bottom zone: chat + admin appearing/disappearing must
+        <!-- fixed-height bottom zone: admin appearing/disappearing must
              never move the centred links above -->
         <div class="nav-bottom">
-          <!-- chat & broadcasts — icon only (news lives in its Broadcast tab) -->
-          <button type="button" class="nav-chat" id="navChatBtn" data-action="toggle-chat" title="Chat &amp; broadcasts" hidden>
-            <i class="fa-regular fa-comments"></i>
-          </button>
           <a href="#/admin" data-nav="admin" id="navAdmin" class="nav-admin" title="Admin" hidden><i class="fa-solid fa-gear"></i><span>Admin</span></a>
         </div>
       </nav>
@@ -96,13 +89,18 @@
     </aside>
   </div>
 
+  <!-- chat & broadcasts — floating button, bottom-right (news lives in its Broadcast tab) -->
+  <button type="button" class="chat-fab" id="navChatBtn" data-action="toggle-chat" title="Chat &amp; broadcasts" hidden>
+    <i class="fa-regular fa-comments"></i>
+  </button>
+
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <div id="modalRoot"></div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="js/config.js?v=21"></script>
-  <script src="js/api.js?v=21"></script>
-  <script src="js/chat.js?v=21"></script>
-  <script src="js/app.js?v=21"></script>
+  <script src="js/config.js?v=22"></script>
+  <script src="js/api.js?v=22"></script>
+  <script src="js/chat.js?v=22"></script>
+  <script src="js/app.js?v=22"></script>
 </body>
 </html>
