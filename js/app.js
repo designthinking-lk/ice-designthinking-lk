@@ -2017,7 +2017,7 @@
         }
       }
     }
-    var vyaw = 0, vpitch = 0, zoom = 1;
+    var vyaw = 0, vpitch = 0, zoom = 1, calmUntil = 0;
     var dragging = false, moved = 0, lastX = 0, lastY = 0, mx = -1, my = -1, hover = -1;
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var theme = {}, themeTick = 0;
@@ -2048,6 +2048,8 @@
     });
     canvas.addEventListener('pointerup', function () {
       dragging = false;
+      vyaw = vpitch = 0;             // no inertia glide — release means stop
+      calmUntil = Date.now() + 2000; // hold still for 2 s before the idle spin resumes
       if (moved < 6 && hover !== -1 && nodes[hover].count > 0) {
         state.skillFilter = nodes[hover].name;
         location.hash = '#/people';
@@ -2072,7 +2074,8 @@
       ctx.clearRect(0, 0, W, H);
 
       if (!dragging) {
-        preRot((reduceMotion ? 0 : 0.0008) + vyaw, 1); preRot(vpitch, 0);
+        var spin = (reduceMotion || Date.now() < calmUntil) ? 0 : 0.0008;
+        preRot(spin + vyaw, 1); preRot(vpitch, 0);
         vyaw *= 0.95; vpitch *= 0.95;
       }
       var scale = Math.min(W, H) * 0.34 * zoom, camd = 3.2;
