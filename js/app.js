@@ -533,9 +533,9 @@
   function viewLanding() {
     return '<div class="landing">' +
       '<div class="feature-video">' +
-      '<iframe src="https://www.youtube.com/embed/x8rehfnwRv4?start=12&autoplay=1&mute=1&rel=0" ' +
+      '<iframe src="https://www.youtube.com/embed/x8rehfnwRv4?start=12&autoplay=1&mute=1&rel=0&controls=0&iv_load_policy=3&playsinline=1&loop=1&playlist=x8rehfnwRv4" ' +
       'title="ICE workshop highlights" frameborder="0" ' +
-      'allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>' +
+      'allow="autoplay; encrypted-media" tabindex="-1"></iframe>' +
       '</div></div>';
   }
 
