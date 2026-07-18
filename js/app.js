@@ -225,8 +225,10 @@
         '<button class="avatar-circle-btn" data-action="user-menu" aria-label="Account" title="' + esc(d.me.name) + '">' +
         avatar(d.me, 'avatar-sm') + '</button>';
     } else if (signedIn()) {
+      // Until the first fresh bootstrap confirms this person is NOT registered,
+      // show no CTA — a registered member must never see it flash at boot.
       actions.innerHTML =
-        '<a class="btn btn-gradient btn-sm" href="#/register"><i class="fa-regular fa-id-card"></i>Complete registration</a>' +
+        (state.loaded ? '<a class="btn btn-gradient btn-sm" href="#/register"><i class="fa-regular fa-id-card"></i>Complete registration</a>' : '') +
         '<button class="avatar-circle-btn" data-action="guest-menu" aria-label="Account" title="Account">' +
         '<span class="avatar-guest"><i class="fa-solid fa-user"></i></span></button>';
     } else {
@@ -1997,7 +1999,25 @@
     }
 
     var ctx = canvas.getContext('2d');
-    var yaw = 0.6, pitch = 0.25, vyaw = 0, vpitch = 0, zoom = 1;
+    // trackball rotation: a full 3x3 matrix, spun around the SCREEN's axes —
+    // unlimited rotation in every direction, and dragging always follows the
+    // pointer no matter which way up the maze currently is.
+    var R = [0.83, 0, 0.56, 0.14, 0.97, -0.2, -0.54, 0.24, 0.8]; // ≈ old start view
+    function preRot(a, axis) { // R = Rot(axis, a) · R
+      var c = Math.cos(a), s = Math.sin(a), m = R.slice(), i;
+      if (axis === 0) { // screen X
+        for (i = 0; i < 3; i++) {
+          R[3 + i] = c * m[3 + i] - s * m[6 + i];
+          R[6 + i] = s * m[3 + i] + c * m[6 + i];
+        }
+      } else { // screen Y
+        for (i = 0; i < 3; i++) {
+          R[i] = c * m[i] + s * m[6 + i];
+          R[6 + i] = -s * m[i] + c * m[6 + i];
+        }
+      }
+    }
+    var vyaw = 0, vpitch = 0, zoom = 1;
     var dragging = false, moved = 0, lastX = 0, lastY = 0, mx = -1, my = -1, hover = -1;
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var theme = {}, themeTick = 0;
@@ -2023,7 +2043,7 @@
       var dX = e.clientX - lastX, dY = e.clientY - lastY;
       moved += Math.abs(dX) + Math.abs(dY);
       vyaw = dX * 0.005; vpitch = -dY * 0.005; // Y inverted — pull down to tilt up
-      yaw += vyaw; pitch = Math.max(-1.4, Math.min(1.4, pitch + vpitch));
+      preRot(vyaw, 1); preRot(vpitch, 0);
       lastX = e.clientX; lastY = e.clientY;
     });
     canvas.addEventListener('pointerup', function () {
@@ -2052,16 +2072,15 @@
       ctx.clearRect(0, 0, W, H);
 
       if (!dragging) {
-        yaw += reduceMotion ? 0 : 0.0008 + vyaw; pitch += vpitch;
+        preRot((reduceMotion ? 0 : 0.0008) + vyaw, 1); preRot(vpitch, 0);
         vyaw *= 0.95; vpitch *= 0.95;
-        pitch = Math.max(-1.4, Math.min(1.4, pitch));
       }
-      var cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       var scale = Math.min(W, H) * 0.34 * zoom, camd = 3.2;
       for (var i = 0; i < nodes.length; i++) {
         var n = nodes[i];
-        var x1 = n.x * cy + n.z * sy, z1 = -n.x * sy + n.z * cy;
-        var y2 = n.y * cp - z1 * sp, z2 = n.y * sp + z1 * cp;
+        var x1 = R[0] * n.x + R[1] * n.y + R[2] * n.z;
+        var y2 = R[3] * n.x + R[4] * n.y + R[5] * n.z;
+        var z2 = R[6] * n.x + R[7] * n.y + R[8] * n.z;
         var f = camd / (camd - z2);
         proj[i] = { x: W / 2 + x1 * scale * f, y: H / 2 + y2 * scale * f, f: f, z: z2 };
       }
