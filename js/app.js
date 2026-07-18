@@ -566,7 +566,7 @@
 
   function hiveCaptionText(users, team) {
     if (team) return 'Showing ' + esc(team.name) + ' — tap the chip again to clear';
-    return users.length ? 'Hover a face to preview' : 'Waiting for people to join — slots fill as they register';
+    return users.length ? '' : 'Waiting for people to join — slots fill as they register';
   }
 
   // The whole ICE wordmark always renders. Cells with no assigned user yet are

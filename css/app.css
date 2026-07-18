@@ -1017,12 +1017,14 @@ body.chat-open .chat-toggle { background: var(--color-accent-light); border-colo
   display: flex; align-items: center; gap: 10px;
 }
 .tools-fab {
-  width: 38px; height: 38px; border-radius: 999px; flex: none;
-  display: flex; align-items: center; justify-content: center;
+  height: 38px; border-radius: 999px; flex: none;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 0 16px;
   border: 1px solid var(--border); background: var(--surface);
-  color: var(--text-body); font-size: 15px;
+  color: var(--text-body); font-size: 14.5px; font-weight: 600;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
+.tools-fab i { font-size: 14px; }
 .tools-fab:hover { background: var(--bg-subtle); border-color: var(--border-strong); color: var(--text); }
 .tools-fab[hidden] { display: none; }
 .tools-fab.active { color: var(--color-accent); border-color: var(--color-accent); }
@@ -1086,8 +1088,9 @@ body.chat-open .chat-fab { display: none; }
   margin-left: auto; min-width: 0; overflow-x: auto;
   display: flex; align-items: center; gap: 14px; scrollbar-width: none;
 }
-.topbar-count { font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
-.topbar-tag { font-size: 13.5px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+/* count / legend / tagline share the team chips' exact type: 13px / 600 */
+.topbar-count { font-size: 13px; font-weight: 600; color: var(--text-body); white-space: nowrap; }
+.topbar-tag { font-size: 13px; font-weight: 600; color: var(--text-body); white-space: nowrap; }
 .topbar-teams::-webkit-scrollbar { display: none; }
 .topbar-teams .hive-teams {
   position: static; display: flex; flex-wrap: nowrap; gap: 8px;
@@ -1139,7 +1142,7 @@ body.hive-full .project-switcher select { pointer-events: auto; }
   box-shadow: 0 18px 44px -18px rgba(14, 15, 17, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
-.project-card:hover { transform: translateY(-4px); box-shadow: 0 26px 54px -18px rgba(14, 15, 17, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
+.project-card:hover { box-shadow: 0 26px 54px -18px rgba(14, 15, 17, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
 .project-card h3 { margin: 0 0 4px; font-size: 19px; color: #fff; letter-spacing: -0.01em; }
 .project-card p { margin: 0; font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.85); }
 .pc-tag {
@@ -1214,8 +1217,8 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 
 /* mentors/participants legend beside the chain, same line */
 .topbar-legend {
-  display: flex; align-items: center; gap: 16px; margin-left: 20px;
-  font-size: 13px; color: var(--text-muted); white-space: nowrap; flex: none;
+  display: flex; align-items: center; gap: 16px;
+  font-size: 13px; font-weight: 600; color: var(--text-body); white-space: nowrap; flex: none;
 }
 .topbar-legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; }
 .topbar-legend .dot.mentor { background: #6100FF; }
