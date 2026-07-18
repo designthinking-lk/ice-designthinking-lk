@@ -1025,8 +1025,15 @@ body.chat-open .chat-toggle { background: var(--color-accent-light); border-colo
 }
 .tools-fab i { font-size: 15.5px; width: 20px; text-align: center; color: var(--text-faint); }
 .tools-fab:hover { background: var(--bg-subtle); color: var(--text); }
-.tools-fab.active { color: var(--color-accent); }
-.tools-fab.active i { color: var(--color-accent); }
+/* same glow + breathing animation as the sidebar nav's active link */
+.tools-fab.active {
+  background: none; color: var(--color-accent);
+  transform-origin: right center; /* it sits at the screen's right edge */
+  animation: nav-glow 2.8s ease-in-out infinite;
+}
+.tools-fab.active i { color: var(--color-accent); filter: drop-shadow(0 0 6px rgba(97, 0, 255, 0.45)); }
+:root[data-theme="dark"] .tools-fab.active { animation-name: nav-glow-dark; }
+:root[data-theme="dark"] .tools-fab.active i { filter: drop-shadow(0 0 6px rgba(0, 215, 238, 0.5)); }
 .tools-fab:hover { background: var(--bg-subtle); border-color: var(--border-strong); color: var(--text); }
 .tools-fab[hidden] { display: none; }
 .tools-fab.active { color: var(--color-accent); border-color: var(--color-accent); }
