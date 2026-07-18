@@ -78,7 +78,7 @@ button { font-family: inherit; }
 .sidebar-top { min-height: 30px; }
 .brand { display: flex; align-items: center; position: fixed; top: 17px; left: 22px; z-index: 70; }
 .brand-name {
-  font-family: var(--font-display); font-weight: 800; font-size: 21px;
+  font-family: var(--font-display); font-weight: 800; font-size: 24px;
   letter-spacing: -0.02em; color: var(--text); white-space: nowrap;
 }
 .brand-year {
@@ -106,10 +106,10 @@ button { font-family: inherit; }
 .nav a {
   display: flex; align-items: center; gap: 11px; align-self: flex-start;
   padding: 10px 14px; border-radius: 10px;
-  color: var(--text-body); font-weight: 500; font-size: 14.5px;
+  color: var(--text-body); font-weight: 500; font-size: 16px;
   position: relative; white-space: nowrap; overflow: hidden;
 }
-.nav a i { font-size: 14px; width: 18px; text-align: center; color: var(--text-faint); flex: none; }
+.nav a i { font-size: 15.5px; width: 20px; text-align: center; color: var(--text-faint); flex: none; }
 .nav a[hidden] { display: none; }
 /* the spacer's auto margin mirrors ::before's, so the links centre exactly
    regardless of which bottom items (chat/admin) are visible */
@@ -1011,15 +1011,15 @@ body.chat-open .chat-toggle { background: var(--color-accent-light); border-colo
 /* Floating chat button, bottom-right corner (news lives in its Broadcast tab) */
 .chat-fab {
   position: fixed; right: 22px; bottom: 22px; z-index: 55;
-  width: 52px; height: 52px; border-radius: 999px; border: none; cursor: pointer;
+  /* same footprint as the theme toggle / profile buttons */
+  width: 38px; height: 38px; border-radius: 999px; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, #00D7EE 0%, #2E6BF6 55%, #6100FF 100%);
-  color: #fff; font-size: 20px;
-  box-shadow: 0 6px 20px -4px rgba(97, 0, 255, 0.5);
-  transition: transform 0.15s, box-shadow 0.15s;
+  color: #fff; font-size: 16px;
+  box-shadow: 0 4px 14px -4px rgba(97, 0, 255, 0.5);
+  transition: filter 0.15s, box-shadow 0.15s;
 }
-.chat-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 26px -6px rgba(97, 0, 255, 0.6); }
-.chat-fab:active { transform: translateY(0); }
+.chat-fab:hover { filter: brightness(1.07); box-shadow: 0 6px 18px -5px rgba(97, 0, 255, 0.6); }
 .chat-fab[hidden] { display: none; }
 /* the open pane owns the right edge — its close button takes over */
 body.chat-open .chat-fab { display: none; }
@@ -1064,11 +1064,14 @@ body.chat-open .chat-fab { display: none; }
   box-shadow: 0 0 0 2px rgba(14, 15, 17, 0.6); z-index: 3;
 }
 
-/* team chips relocated to the app bar (People view only) */
+/* team chips + counts, right-aligned in the app bar so the expanded animated
+   title never collides with them */
 .topbar-teams {
-  position: absolute; left: calc(50vw - 176px); transform: translateX(-50%);
-  max-width: 62%; min-width: 0; overflow-x: auto; display: flex; scrollbar-width: none;
+  margin-left: auto; min-width: 0; overflow-x: auto;
+  display: flex; align-items: center; gap: 14px; scrollbar-width: none;
 }
+.topbar-count { font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.topbar-tag { font-size: 13.5px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
 .topbar-teams::-webkit-scrollbar { display: none; }
 .topbar-teams .hive-teams {
   position: static; display: flex; flex-wrap: nowrap; gap: 8px;
@@ -1121,6 +1124,13 @@ body.hive-full .hive .oct { pointer-events: auto; }
   position: absolute; top: 15px; left: 20px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
   background: rgba(255, 255, 255, 0.18); border-radius: 999px; padding: 3px 10px;
+}
+/* team credit chip, top-right of each project card */
+.pc-team {
+  position: absolute; top: 15px; right: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.9); color: #0E0F11;
+  border-radius: 999px; padding: 3px 11px;
 }
 /* placeholder backdrops — one distinct duotone per card */
 .pc-1 { background: radial-gradient(120% 140% at 100% 0%, rgba(0, 215, 238, 0.55), transparent 55%), linear-gradient(221deg, #00D7EE, #6100FF); }
@@ -1191,6 +1201,24 @@ body.hive-full .hive .oct { pointer-events: auto; }
 /* hidden "Team " prefix on tucked chips — keeps width, so the chip's size and
    its letter's position are unchanged */
 .tc-ghost { visibility: hidden; }
+
+/* ------------------------------------------------------------------ skills */
+.skills-wrap { max-width: 860px; margin: 26px auto 0; }
+.skills-wrap h2 { font-family: var(--font-display); font-size: 24px; letter-spacing: -0.01em; margin: 0 0 6px; }
+.skills-sub { color: var(--text-muted); font-size: 14px; margin: 0 0 24px; }
+.skills-cloud { display: flex; flex-wrap: wrap; gap: 10px; }
+.skill-cloud-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border-strong); background: var(--surface);
+  border-radius: 999px; padding: 8px 16px; cursor: pointer;
+  font: inherit; font-size: 14.5px; font-weight: 600; color: var(--text);
+  transition: border-color 0.15s, color 0.15s;
+}
+.skill-cloud-chip:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.skill-cloud-chip .sk-count {
+  background: var(--bg-subtle); color: var(--text-muted); border-radius: 999px;
+  font-size: 12px; font-weight: 700; padding: 2px 8px;
+}
 
 /* ------------------------------------------------- landing chrome overlay */
 /* On the landing the video IS the background: sidebar + topbar go clear and

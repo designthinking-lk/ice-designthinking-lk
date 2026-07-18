@@ -247,11 +247,23 @@
         document.body.classList.add('chat-open');
       }
     }
-    // team filter chips live in the app bar, on the People view only
+    // app-bar context blocks (right-aligned): People gets the legend + team
+    // count + chips; Projects gets the crafted-by tagline.
     var isPeople = /^#\/people$/.test(location.hash || '#/');
+    var isProjects = /^#\/projects$/.test(location.hash || '#/');
     var tb = $('#topbarTeams');
     if (tb) {
-      var chips = isPeople ? teamChipsHtml() + topbarLegendHtml() : '';
+      var chips = '';
+      if (isPeople) {
+        var nTeams = homeTeams().length;
+        chips = topbarLegendHtml() +
+          '<span class="topbar-count">' + nTeams + ' team' + (nTeams === 1 ? '' : 's') + '</span>' +
+          teamChipsHtml();
+      } else if (isProjects) {
+        var nT = homeTeams().length;
+        chips = '<span class="topbar-tag">' + DEMO_PROJECTS.length + ' amazing projects crafted in 3 days by ' +
+          nT + ' amazing teams</span>';
+      }
       if (tb.innerHTML !== chips) tb.innerHTML = chips;
     }
     // on People, the hive goes full-bleed over the rail (letters above the
@@ -1808,11 +1820,14 @@
   ];
 
   function viewProjects() {
-    // public — like People
+    // public — like People. Each card credits its team (top-right chip).
+    var teams = homeTeams();
     return '<div class="projects-wrap"><div class="projects-grid">' +
       DEMO_PROJECTS.map(function (p, i) {
+        var team = teams[i % teams.length];
         return '<article class="project-card pc-' + (i + 1) + '">' +
           '<span class="pc-tag">Project</span>' +
+          '<span class="pc-team">' + esc(team ? team.name : 'Team ' + String.fromCharCode(65 + i)) + '</span>' +
           '<h3>' + esc(p.t) + '</h3>' +
           '<p>' + esc(p.d) + '</p>' +
           '</article>';
@@ -1822,6 +1837,31 @@
   function viewTools() {
     if (!signedIn()) return signInGate('tools');
     return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-toolbox"></i>Tools are coming soon.<br>Handy links and resources for the workshop will live here.</div>';
+  }
+
+  // Skills across the whole room — tapping one jumps to People filtered by it.
+  function viewSkills() {
+    var d = state.data;
+    if (!d) return skeletons();
+    var counts = {};
+    (d.users || []).forEach(function (u) {
+      (u.skills || []).forEach(function (s) { counts[s] = (counts[s] || 0) + 1; });
+    });
+    var names = Object.keys(counts).sort(function (a, b) {
+      return counts[b] - counts[a] || a.localeCompare(b);
+    });
+    if (!names.length) {
+      return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-wand-magic-sparkles"></i>' +
+        'No skills yet — they light up here as people register.</div>';
+    }
+    return '<div class="skills-wrap">' +
+      '<h2>Skills in the room</h2>' +
+      '<p class="skills-sub">Everything this year’s people bring with them — tap a skill to meet them.</p>' +
+      '<div class="skills-cloud">' +
+      names.map(function (s) {
+        return '<button class="skill-cloud-chip" type="button" data-action="filter-skill" data-skill="' + esc(s) + '">' +
+          esc(s) + '<span class="sk-count">' + counts[s] + '</span></button>';
+      }).join('') + '</div></div>';
   }
 
   // Full registry rows, lazily fetched for the admin Projects panel (global
@@ -1960,6 +2000,7 @@
     { re: /^#\/teams$/, view: function () { location.hash = '#/people'; return ''; } },
     { re: /^#\/team\/([\w-]+)$/, view: viewTeam },
     { re: /^#\/projects$/, view: viewProjects },
+    { re: /^#\/skills$/, view: viewSkills },
     { re: /^#\/tools$/, view: viewTools },
     { re: /^#\/announcements$/, view: viewAnnouncements },
     { re: /^#\/register$/, view: viewRegister },

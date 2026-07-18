@@ -22,8 +22,8 @@
         crossorigin="anonymous" referrerpolicy="no-referrer">
 
   <!-- bump ?v= on any asset change: GitHub Pages caches for 10 min -->
-  <link rel="stylesheet" href="css/theme.css?v=28">
-  <link rel="stylesheet" href="css/app.css?v=28">
+  <link rel="stylesheet" href="css/theme.css?v=29">
+  <link rel="stylesheet" href="css/app.css?v=29">
   <!-- apply the saved theme before first paint so night mode never flashes -->
   <script>try{if(localStorage.getItem('ice.theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 </head>
@@ -49,13 +49,14 @@
       <nav class="nav" id="nav">
         <a href="#/people" data-nav="people" title="People"><i class="fa-solid fa-users"></i><span>People</span></a>
         <a href="#/projects" data-nav="projects" id="navProjects" title="Projects"><i class="fa-solid fa-diagram-project"></i><span>Projects</span></a>
-        <a href="#/tools" data-nav="tools" id="navTools" title="Tools" hidden><i class="fa-solid fa-toolbox"></i><span>Tools</span></a>
+        <a href="#/skills" data-nav="skills" id="navSkills" title="Skills"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Skills</span></a>
         <!-- always-present bottom spacer: keeps the links centred no matter
-             whether the admin item below is hidden -->
+             which bottom items are hidden -->
         <span class="nav-spacer" aria-hidden="true"></span>
-        <!-- fixed-height bottom zone: admin appearing/disappearing must
+        <!-- fixed-height bottom zone: tools/admin appearing/disappearing must
              never move the centred links above -->
         <div class="nav-bottom">
+          <a href="#/tools" data-nav="tools" id="navTools" title="Tools" hidden><i class="fa-solid fa-toolbox"></i><span>Tools</span></a>
           <a href="#/admin" data-nav="admin" id="navAdmin" class="nav-admin" title="Admin" hidden><i class="fa-solid fa-gear"></i><span>Admin</span></a>
         </div>
       </nav>
@@ -98,9 +99,9 @@
   <div id="modalRoot"></div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="js/config.js?v=28"></script>
-  <script src="js/api.js?v=28"></script>
-  <script src="js/chat.js?v=28"></script>
-  <script src="js/app.js?v=28"></script>
+  <script src="js/config.js?v=29"></script>
+  <script src="js/api.js?v=29"></script>
+  <script src="js/chat.js?v=29"></script>
+  <script src="js/app.js?v=29"></script>
 </body>
 </html>
