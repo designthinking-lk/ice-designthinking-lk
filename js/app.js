@@ -548,10 +548,41 @@
   function viewLanding() {
     return '<div class="landing">' +
       '<div class="feature-video">' +
-      '<iframe src="https://www.youtube.com/embed/x8rehfnwRv4?start=12&autoplay=1&mute=1&rel=0&controls=0&iv_load_policy=3&playsinline=1&loop=1&playlist=x8rehfnwRv4" ' +
+      '<iframe src="https://www.youtube.com/embed/x8rehfnwRv4?start=12&autoplay=1&mute=1&rel=0&controls=0&iv_load_policy=3&playsinline=1&loop=1&playlist=x8rehfnwRv4&enablejsapi=1" ' +
       'title="ICE workshop highlights" frameborder="0" ' +
       'allow="autoplay; encrypted-media" tabindex="-1"></iframe>' +
       '</div></div>';
+  }
+
+  // Fade the feature video in only once YouTube reports PLAYING (+ a beat, so
+  // its own start-of-playback control flash has retired). Falls back to a
+  // plain timer if the postMessage handshake never yields events.
+  function initLandingVideo(fv) {
+    if (fv.__wired) return;
+    fv.__wired = true;
+    var iframe = fv.querySelector('iframe');
+    var shown = false, pings = 0;
+    function show(delay) {
+      if (shown) return;
+      shown = true;
+      setTimeout(function () { fv.classList.add('show'); }, delay);
+    }
+    function onMsg(e) {
+      if (String(e.origin).indexOf('youtube.com') === -1) return;
+      var d; try { d = JSON.parse(e.data); } catch (err) { return; }
+      if (d && d.event === 'infoDelivery' && d.info && d.info.playerState === 1) {
+        window.removeEventListener('message', onMsg);
+        show(1800);
+      }
+    }
+    window.addEventListener('message', onMsg);
+    var ping = setInterval(function () {
+      if (shown || ++pings > 20 || !iframe.isConnected) { clearInterval(ping); return; }
+      try {
+        iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'icefv', channel: 'widget' }), '*');
+      } catch (err) { /* not ready yet */ }
+    }, 500);
+    setTimeout(function () { show(0); }, 8000); // safety net
   }
 
   function viewHome() {
@@ -2244,6 +2275,12 @@
     for (var i = 0; i < routes.length; i++) {
       var m = hash.match(routes[i].re);
       if (m) {
+        // Data refreshes re-route — but rebuilding the landing would recreate
+        // the iframe and restart the video (visible as a double fade-in).
+        if (routes[i].view === viewLanding && view.querySelector('.landing')) {
+          renderChrome();
+          return;
+        }
         view.innerHTML = routes[i].view(m[1]);
         renderChrome();
         wireViewExtras(hash, m);
@@ -2259,6 +2296,9 @@
     // skills constellation
     var sc = $('#skillsCanvas');
     if (sc) initSkillsGraph(sc);
+    // landing video: fade in on actual playback
+    var fv = $('.feature-video');
+    if (fv) initLandingVideo(fv);
     // skill tag input
     var skillInput = $('#skillInput');
     if (skillInput) {
