@@ -1231,6 +1231,30 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 .skills3d-wrap { position: absolute; inset: 0; overflow: hidden; }
 .skills3d-wrap canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
 
+/* ------------------------------------------------------------ site credit */
+/* Public-view footer: workshop credit + sponsor logos, bottom-center. */
+.site-credit {
+  position: fixed; left: 0; right: 0; bottom: 18px; z-index: 5;
+  display: flex; align-items: center; justify-content: center; gap: 26px;
+  font-size: 13.5px; color: var(--text-muted); pointer-events: none;
+}
+.site-credit[hidden] { display: none; } /* our display:flex would defeat [hidden] */
+.site-credit a { pointer-events: auto; text-decoration: none; }
+.credit-name {
+  font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em;
+  color: var(--text); transition: color 0.15s;
+}
+.credit-name:hover { color: var(--color-accent); }
+.credit-logos { display: flex; align-items: center; gap: 20px; }
+.credit-logos img { height: 26px; width: auto; display: block; opacity: 0.8; transition: opacity 0.15s; }
+.credit-logos img.nus { height: 34px; }
+.credit-logos a:hover img { opacity: 1; }
+/* ahlab svg is black artwork; the nus png is WHITE artwork (made for dark
+   backgrounds) — each inverts on the theme where it would vanish */
+.credit-logos img.nus { filter: invert(1); }
+:root[data-theme="dark"] .credit-logos img { filter: invert(1); }
+:root[data-theme="dark"] .credit-logos img.nus { filter: none; }
+
 /* ------------------------------------------------- landing chrome overlay */
 /* On the landing the video IS the background: sidebar + topbar go clear and
    their content floats above; the nav's octagon turns glassy for legibility.

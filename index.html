@@ -22,8 +22,8 @@
         crossorigin="anonymous" referrerpolicy="no-referrer">
 
   <!-- bump ?v= on any asset change: GitHub Pages caches for 10 min -->
-  <link rel="stylesheet" href="css/theme.css?v=33">
-  <link rel="stylesheet" href="css/app.css?v=33">
+  <link rel="stylesheet" href="css/theme.css?v=34">
+  <link rel="stylesheet" href="css/app.css?v=34">
   <!-- apply the saved theme before first paint so night mode never flashes -->
   <script>try{if(localStorage.getItem('ice.theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 </head>
@@ -97,13 +97,22 @@
     </button>
   </div>
 
+  <!-- public-view credit + sponsors — hidden once signed in (renderChrome) -->
+  <footer class="site-credit" id="siteCredit" hidden>
+    <span class="credit-line">Workshop by <a class="credit-name" href="https://suranga.info" target="_blank" rel="noopener">Prof. Suranga Nanayakkara</a></span>
+    <span class="credit-logos">
+      <a href="https://ahlab.org" target="_blank" rel="noopener" title="Augmented Human Lab"><img src="assets/ahlab-black.svg" alt="Augmented Human Lab"></a>
+      <a href="https://nus.edu.sg" target="_blank" rel="noopener" title="National University of Singapore"><img class="nus" src="assets/nus-black.png" alt="National University of Singapore"></a>
+    </span>
+  </footer>
+
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <div id="modalRoot"></div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="js/config.js?v=33"></script>
-  <script src="js/api.js?v=33"></script>
-  <script src="js/chat.js?v=33"></script>
-  <script src="js/app.js?v=33"></script>
+  <script src="js/config.js?v=34"></script>
+  <script src="js/api.js?v=34"></script>
+  <script src="js/chat.js?v=34"></script>
+  <script src="js/app.js?v=34"></script>
 </body>
 </html>

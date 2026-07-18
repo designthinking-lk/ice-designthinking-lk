@@ -232,6 +232,9 @@
     } else {
       actions.innerHTML = '<button class="btn btn-primary btn-sm" data-action="sign-in"><i class="fa-brands fa-google"></i>Sign in</button>';
     }
+    // public-view footer: credit + sponsor logos, only while signed out
+    var credit = $('#siteCredit');
+    if (credit) credit.hidden = loggedIn;
     // chat & broadcasts pane — for registered participants (DMs need a
     // workshop account). Hide the sidebar button + force-close otherwise.
     var chatBtn = $('#navChatBtn');
@@ -2033,7 +2036,7 @@
       if (mx >= 0) {
         var best = 1e9;
         for (var h = 0; h < nodes.length; h++) {
-          var pr = (nodes[h].count > 0 ? 7 + Math.sqrt(nodes[h].count) * 5 : 5) * proj[h].f + 6;
+          var pr = (nodes[h].count > 0 ? 10 + Math.sqrt(nodes[h].count) * 7 : 5) * proj[h].f + 6;
           var ddx = proj[h].x - mx, ddy = proj[h].y - my, dd = ddx * ddx + ddy * ddy;
           if (dd < pr * pr && dd < best) { best = dd; hover = h; }
         }
@@ -2054,7 +2057,8 @@
       order.forEach(function (i3) {
         var n = nodes[i3], p = proj[i3];
         var real = n.count > 0;
-        var r = (real ? 7 + Math.sqrt(n.count) * 5 : 4.5) * p.f;
+        // popularity drives size: 1 person → 17px radius, 4 → 24, 9 → 31 …
+        var r = (real ? 10 + Math.sqrt(n.count) * 7 : 4.5) * p.f;
         var depth = Math.max(0.15, (p.f - 0.7) * 1.4);
         ctx.globalAlpha = Math.min(1, depth + (hover === i3 ? 0.4 : 0));
         ctx.fillStyle = real ? theme.accent : theme.faint;
@@ -2063,13 +2067,22 @@
           ctx.strokeStyle = theme.accent; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
           ctx.beginPath(); ctx.arc(p.x, p.y, r + 4, 0, Math.PI * 2); ctx.stroke();
         }
+        // multi-person skills carry their count inside the node
+        if (real && n.count > 1) {
+          ctx.globalAlpha = Math.min(1, depth + 0.25);
+          ctx.fillStyle = '#fff';
+          ctx.font = '700 ' + Math.round(Math.max(10, Math.min(r * 0.85, 18))) + 'px "neue-haas-grotesk-text","Helvetica Neue",sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(n.count, p.x, p.y);
+          ctx.textBaseline = 'alphabetic';
+        }
         var showLabel = real || p.f > 1 || hover === i3;
         if (showLabel) {
           ctx.globalAlpha = Math.min(1, depth * (real ? 1 : 0.65) + (hover === i3 ? 0.4 : 0));
           ctx.fillStyle = real ? theme.text : theme.faint;
           ctx.font = (hover === i3 ? '700 ' : '600 ') + Math.round((real ? 12.5 : 11) * p.f) + 'px "neue-haas-grotesk-text","Helvetica Neue",sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(n.name + (real ? ' · ' + n.count : ''), p.x, p.y + r + 14 * p.f);
+          ctx.fillText(n.name, p.x, p.y + r + 14 * p.f);
         }
       });
       ctx.globalAlpha = 1;
