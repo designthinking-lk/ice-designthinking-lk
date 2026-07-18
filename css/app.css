@@ -984,7 +984,7 @@ body.chat-open .chat-fab { display: none; }
 .commpane[hidden] { display: none; }
 .commpane-head {
   flex: none; display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
 }
 .comm-tabs { flex: 1; display: flex; background: var(--bg-subtle); border-radius: 999px; padding: 3px; }
 .comm-tab {
@@ -993,7 +993,7 @@ body.chat-open .chat-fab { display: none; }
   color: var(--text-muted); cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .comm-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
-.commpane-foot { flex: none; border-top: 1px solid var(--border); padding: 10px 12px; }
+.commpane-foot { flex: none; padding: 10px 12px; }
 .chatpane-foot-link { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; }
 
 /* broadcast entries + composer */
