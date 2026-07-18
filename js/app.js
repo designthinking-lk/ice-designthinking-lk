@@ -570,9 +570,12 @@
     function onMsg(e) {
       if (String(e.origin).indexOf('youtube.com') === -1) return;
       var d; try { d = JSON.parse(e.data); } catch (err) { return; }
-      if (d && d.event === 'infoDelivery' && d.info && d.info.playerState === 1) {
+      // YouTube flashes its center controls for ~3 s whenever playback starts;
+      // reveal only once 3.5 s of footage have actually played (start=12).
+      if (d && d.event === 'infoDelivery' && d.info &&
+          d.info.playerState === 1 && d.info.currentTime >= 15.5) {
         window.removeEventListener('message', onMsg);
-        show(1800);
+        show(0);
       }
     }
     window.addEventListener('message', onMsg);
