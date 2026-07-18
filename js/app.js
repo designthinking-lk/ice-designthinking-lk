@@ -114,6 +114,58 @@
     var tagClose = bold ? '</b>' : '</span>';
     return m ? esc(m[1]) + tagOpen + esc(m[2]) + tagClose : esc(eventName());
   }
+
+  // ---- animated sidebar brand: ICE#### ⇄ "Innovation Creativity Entrepreneurship ####"
+  // The lowercase letters of each word spawn below their capital and glide up,
+  // one rank per word in parallel (ICE → InCrEn → InnCreEnt → …), the phrase
+  // widening as they land. Fully-closed and fully-open states hold for 8 s.
+  var BRAND_WORDS = ['Innovation', 'Creativity', 'Entrepreneurship'];
+  var BRAND_HOLD = 8000, BRAND_STEP = 90;
+  var brandTimers = [];
+
+  function renderBrand(el) {
+    var m = String(eventName()).match(/^ICE(\d+)$/i);
+    if (!m || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      brandTimers.forEach(clearTimeout); brandTimers = [];
+      el.removeAttribute('data-anim');
+      el.innerHTML = brandHtml(false);
+      return;
+    }
+    if (el.getAttribute('data-anim') === m[1]) return; // loop already running
+    el.setAttribute('data-anim', m[1]);
+    var html = '';
+    BRAND_WORDS.forEach(function (w) {
+      html += '<span class="bw">' + w.charAt(0);
+      for (var i = 1; i < w.length; i++) html += '<span class="bl">' + w.charAt(i) + '</span>';
+      html += '</span>';
+    });
+    html += '<span class="brand-year">' + esc(m[1]) + '</span>';
+    el.innerHTML = html;
+    var words = [].map.call(el.querySelectorAll('.bw'), function (w) {
+      return [].slice.call(w.querySelectorAll('.bl'));
+    });
+    var maxLen = Math.max.apply(null, words.map(function (a) { return a.length; }));
+    brandTimers.forEach(clearTimeout); brandTimers = [];
+    function later(fn, ms) { brandTimers.push(setTimeout(fn, ms)); }
+    function setRank(n) { // letters whose rank is below n are shown
+      words.forEach(function (arr) {
+        arr.forEach(function (sp, i) { sp.classList.toggle('on', i < n); });
+      });
+      el.classList.toggle('open', n > 0);
+    }
+    function expand(n) {
+      setRank(n);
+      if (n < maxLen) later(function () { expand(n + 1); }, BRAND_STEP);
+      else later(function () { collapse(maxLen - 1); }, BRAND_HOLD);
+    }
+    function collapse(n) {
+      setRank(n);
+      if (n > 0) later(function () { collapse(n - 1); }, BRAND_STEP);
+      else later(function () { expand(1); }, BRAND_HOLD);
+    }
+    setRank(0);
+    later(function () { expand(1); }, BRAND_HOLD);
+  }
   function isMentor() { var m = me(); return !!(m && m.role === 'mentor'); }
   // Mentors and admins may post announcements.
   function canAnnounce() { return !!(state.data && (state.data.isAdmin || isMentor())); }
@@ -158,7 +210,7 @@
     var d = state.data || {};
     // Sidebar brand follows the active project's name.
     var brandName = $('.brand-name');
-    if (brandName) brandName.innerHTML = brandHtml(false);
+    if (brandName) renderBrand(brandName);
     renderProjectSwitcher(d);
     var actions = $('#topbarActions');
     // People & Projects are public; Tools needs sign-in; Admin only for admins.
@@ -195,21 +247,21 @@
       }
     }
     // team filter chips live in the app bar, on the People view only
-    var isHome = /^#\/?$/.test(location.hash || '#/');
+    var isPeople = /^#\/people$/.test(location.hash || '#/');
     var tb = $('#topbarTeams');
     if (tb) {
-      var chips = isHome ? teamChipsHtml() + topbarLegendHtml() : '';
+      var chips = isPeople ? teamChipsHtml() + topbarLegendHtml() : '';
       if (tb.innerHTML !== chips) tb.innerHTML = chips;
     }
     // on People, the hive goes full-bleed over the rail (letters above the
     // half octagon; the I's cavity hosts the nav)
-    document.body.classList.toggle('hive-full', isHome);
+    document.body.classList.toggle('hive-full', isPeople);
     // active nav
     var hash = location.hash || '#/';
     $all('#nav a').forEach(function (a) {
       var key = a.getAttribute('data-nav');
-      var on = (key === 'home' && (hash === '#/' || hash.indexOf('#/profile') === 0 || hash === '#')) ||
-               (key !== 'home' && hash.indexOf('#/' + key) === 0) ||
+      var on = (key === 'people' && hash.indexOf('#/profile') === 0) ||
+               hash.indexOf('#/' + key) === 0 ||
                (key === 'teams' && hash.indexOf('#/team/') === 0);
       a.classList.toggle('active', !!on);
     });
@@ -257,8 +309,6 @@
       items =
         '<div class="menu-head">' + esc(d.me.name) + '</div>' +
         '<a class="menu-item" href="#/profile/' + esc(d.me.id) + '" data-action="menu-nav"><i class="fa-regular fa-user"></i>My profile</a>' +
-        '<a class="menu-item" href="#/me" data-action="menu-nav"><i class="fa-solid fa-pen"></i>Edit profile</a>' +
-        (d.isAdmin ? '<a class="menu-item" href="#/admin" data-action="menu-nav"><i class="fa-solid fa-shield-halved"></i>Admin</a>' : '') +
         '<div class="menu-sep"></div>' +
         '<button class="menu-item danger" data-action="sign-out"><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>';
     } else {
@@ -473,6 +523,17 @@
       '<span><span class="dot mentor"></span>' + mentors + ' mentor' + (mentors === 1 ? '' : 's') + '</span>' +
       '<span><span class="dot participant"></span>' + participants + ' participant' + (participants === 1 ? '' : 's') + '</span>' +
       '</div>';
+  }
+
+  // Landing (#/): chrome only, empty middle apart from the feature video from
+  // the last workshop — fades in after a beat, edges masked into the page.
+  function viewLanding() {
+    return '<div class="landing">' +
+      '<div class="feature-video">' +
+      '<iframe src="https://www.youtube.com/embed/x8rehfnwRv4?start=12&autoplay=1&mute=1&rel=0" ' +
+      'title="ICE workshop highlights" frameborder="0" ' +
+      'allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>' +
+      '</div></div>';
   }
 
   function viewHome() {
@@ -1888,11 +1949,12 @@
   // ---------------------------------------------------------------- router
 
   var routes = [
-    { re: /^#\/?$/, view: viewHome },
+    { re: /^#\/?$/, view: viewLanding },
+    { re: /^#\/people$/, view: viewHome },
     { re: /^#\/profile\/([\w-]+)$/, view: viewProfile },
     // the teams listing is gone — People (with its team filter) covers it;
     // team detail pages remain reachable from profiles
-    { re: /^#\/teams$/, view: function () { location.hash = '#/'; return ''; } },
+    { re: /^#\/teams$/, view: function () { location.hash = '#/people'; return ''; } },
     { re: /^#\/team\/([\w-]+)$/, view: viewTeam },
     { re: /^#\/projects$/, view: viewProjects },
     { re: /^#\/tools$/, view: viewTools },
@@ -2040,7 +2102,7 @@
       case 'filter-skill': {
         var s = t.getAttribute('data-skill');
         state.skillFilter = state.skillFilter === s ? null : s;
-        if (!/^#\/?$/.test(location.hash || '#/')) location.hash = '#/'; else route();
+        if (!/^#\/people$/.test(location.hash || '#/')) location.hash = '#/people'; else route();
         break;
       }
       case 'filter-team': {

@@ -73,7 +73,10 @@ button { font-family: inherit; }
 .sidebar-top, .project-switcher, .nav { position: relative; z-index: 1; }
 
 .sidebar-top { display: flex; align-items: center; padding: 0 6px; flex: none; }
-.brand { display: flex; align-items: center; overflow: hidden; }
+/* The brand escapes the sidebar's overflow clip (position: fixed, no
+   transformed ancestor) so the animated title can expand across the topbar. */
+.sidebar-top { min-height: 30px; }
+.brand { display: flex; align-items: center; position: fixed; top: 17px; left: 22px; z-index: 70; }
 .brand-name {
   font-family: var(--font-display); font-weight: 800; font-size: 21px;
   letter-spacing: -0.02em; color: var(--text); white-space: nowrap;
@@ -82,6 +85,20 @@ button { font-family: inherit; }
   background: var(--gradient-brand);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+/* animated brand: lowercase ranks glide up from below their capital while the
+   phrase widens to make room (ICE2026 ⇄ Innovation Creativity Entrepreneurship 2026) */
+.brand-name .bl {
+  /* text-bottom: an overflow-clipped inline-block loses its text baseline
+     (the box bottom becomes the baseline); anchoring to the parent's content
+     bottom puts the glyph baseline back on the capitals' baseline */
+  display: inline-block; max-width: 0; opacity: 0; overflow: hidden;
+  vertical-align: text-bottom;
+  transform: translateY(0.5em);
+  transition: max-width 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+}
+.brand-name .bl.on { max-width: 0.9em; opacity: 1; transform: none; }
+.brand-name .bw { transition: margin-right 0.3s ease; }
+.brand-name.open .bw { margin-right: 0.26em; }
 .nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 /* vertically centre the main links: the top spacer and the admin item's
    auto margin absorb the free space equally (admin stays pinned at bottom) */
@@ -181,6 +198,23 @@ button { font-family: inherit; }
   animation: rot 0.7s linear infinite;
 }
 @keyframes rot { to { transform: rotate(360deg); } }
+
+/* ----------------------------------------------------------------- landing */
+/* Home (#/): chrome only — the middle stays empty apart from the feature
+   video, which fades in after a beat with its edges masked into the page. */
+.landing {
+  min-height: calc(100vh - 140px);
+  display: flex; align-items: center; justify-content: center;
+}
+.feature-video {
+  width: min(860px, 80%); aspect-ratio: 16 / 9;
+  opacity: 0; transform: translateY(14px) scale(0.985);
+  animation: featureIn 1.8s ease 2.2s forwards;
+  -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, #000 50%, transparent 95%);
+  mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, #000 50%, transparent 95%);
+}
+.feature-video iframe { width: 100%; height: 100%; border: 0; border-radius: 18px; }
+@keyframes featureIn { to { opacity: 1; transform: none; } }
 
 /* -------------------------------------------------------------------- hero */
 .hero { padding: 44px 0 36px; }
