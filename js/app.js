@@ -163,8 +163,9 @@
       if (n > 0) later(function () { collapse(n - 1); }, BRAND_STEP);
       else later(function () { expand(1); }, BRAND_HOLD);
     }
-    setRank(0);
-    later(function () { expand(1); }, BRAND_HOLD);
+    // start in the fully-expanded state, hold, then breathe closed and loop
+    setRank(maxLen);
+    later(function () { collapse(maxLen - 1); }, BRAND_HOLD);
   }
   function isMentor() { var m = me(); return !!(m && m.role === 'mentor'); }
   // Mentors and admins may post announcements.

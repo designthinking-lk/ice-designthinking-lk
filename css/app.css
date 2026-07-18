@@ -33,7 +33,7 @@ button { font-family: inherit; }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 
 /* Avatar dropdown menu (anchored under the profile button; not a modal) */
-.topbar { position: relative; }
+.topbar { position: relative; z-index: 2; /* above the landing video layer */ }
 .menu-pop {
   position: absolute; top: calc(100% - 4px); right: 16px; z-index: 70;
   min-width: 210px; padding: 6px; background: var(--surface);
@@ -59,6 +59,9 @@ button { font-family: inherit; }
   padding: 18px 16px 20px;
   background: var(--surface);
   position: relative; overflow: hidden; /* clips the octagon's off-screen half */
+  /* above the landing video AND the topbar (z2): the fixed animated brand
+     lives in this stacking context and must expand across the topbar */
+  z-index: 3;
 }
 
 /* Half of a large hive octagon, vertically centred, its other half bleeding
@@ -88,11 +91,11 @@ button { font-family: inherit; }
 /* animated brand: lowercase ranks glide up from below their capital while the
    phrase widens to make room (ICE2026 ⇄ Innovation Creativity Entrepreneurship 2026) */
 .brand-name .bl {
-  /* text-bottom: an overflow-clipped inline-block loses its text baseline
-     (the box bottom becomes the baseline); anchoring to the parent's content
-     bottom puts the glyph baseline back on the capitals' baseline */
-  display: inline-block; max-width: 0; opacity: 0; overflow: hidden;
-  vertical-align: text-bottom;
+  /* clip-path instead of overflow:hidden — same reveal clipping, but the
+     inline-block keeps its natural text baseline, so revealed letters sit
+     exactly on the capitals' glyph line */
+  display: inline-block; max-width: 0; opacity: 0;
+  clip-path: inset(0);
   transform: translateY(0.5em);
   transition: max-width 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
 }
@@ -200,28 +203,32 @@ button { font-family: inherit; }
 @keyframes rot { to { transform: rotate(360deg); } }
 
 /* ----------------------------------------------------------------- landing */
-/* Home (#/): chrome only — the middle stays empty apart from the feature
-   video, which fades in after a beat with its edges masked into the page. */
-.landing {
-  min-height: calc(100vh - 140px);
-  display: flex; align-items: center; justify-content: center;
-}
+/* Home (#/): chrome only — the feature video fills the whole viewport
+   (full-screen experiment; the previous centered 860px card is in git
+   history @v25) and fades in after a beat. Wide alpha fades (~2in) melt
+   every edge into the page; chrome layers above via z-index. */
+.landing { position: fixed; inset: 0 0 0 176px; z-index: 0; /* left offset: the fade starts at the sidebar's edge instead of vanishing behind it */ }
 .feature-video {
-  width: min(860px, 80%); aspect-ratio: 16 / 9;
-  opacity: 0; transform: translateY(14px) scale(0.985);
-  animation: featureIn 1.8s ease 2.2s forwards;
-  /* soft alpha edges: two crossed fades, intersected — each edge dissolves
-     into the page over ~8% of the box (corners compound, fading more) */
+  position: absolute; inset: 0;
+  opacity: 0; transform: scale(1.03);
+  animation: featureIn 2.2s ease 2.2s forwards;
   -webkit-mask-image:
-    linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%),
-    linear-gradient(to bottom, transparent 0, #000 10%, #000 90%, transparent 100%);
+    linear-gradient(to right, transparent 0, #000 190px, #000 calc(100% - 190px), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 170px, #000 calc(100% - 170px), transparent 100%);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%),
-    linear-gradient(to bottom, transparent 0, #000 10%, #000 90%, transparent 100%);
+    linear-gradient(to right, transparent 0, #000 190px, #000 calc(100% - 190px), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 170px, #000 calc(100% - 170px), transparent 100%);
   mask-composite: intersect;
 }
-.feature-video iframe { width: 100%; height: 100%; border: 0; border-radius: 18px; }
+/* 16:9 iframe sized to COVER the viewport, centered (object-fit for iframes) */
+.feature-video iframe {
+  position: absolute; top: 50%; left: 50%;
+  width: max(100vw, calc(100vh * 16 / 9));
+  height: max(100vh, calc(100vw * 9 / 16));
+  transform: translate(-50%, -50%);
+  border: 0;
+}
 @keyframes featureIn { to { opacity: 1; transform: none; } }
 
 /* -------------------------------------------------------------------- hero */
