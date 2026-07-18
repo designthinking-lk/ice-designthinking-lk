@@ -1116,10 +1116,16 @@ body.hive-full .hive .oct { pointer-events: auto; }
    letter peeking out — (Team A) B) C) D)… Hover or selection lifts one out. */
 .topbar-teams { align-items: center; overflow: visible; }
 .topbar-teams .hive-teams { gap: 0; }
-.topbar-teams .team-chip { position: relative; transition: transform 0.15s ease; }
-.topbar-teams .team-chip + .team-chip { margin-left: -52px; }
-.topbar-teams .team-chip:hover { z-index: 60 !important; transform: translateY(-1px); }
-.topbar-teams .team-chip.on { z-index: 55 !important; }
+.topbar-teams .team-chip { position: relative; transition: background 0.15s ease, color 0.15s ease; }
+.topbar-teams .team-chip + .team-chip { margin-left: -44px; }
+/* hover: no lift, no reveal — the tucked chip just fills with the accent
+   (purple by day, cyan by night via the token swap) */
+.topbar-teams .team-chip:hover {
+  background: var(--color-accent); border-color: var(--color-accent); color: #fff;
+}
+:root[data-theme="dark"] .topbar-teams .team-chip:hover { color: #08272B; }
+.topbar-teams .team-chip.on { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+:root[data-theme="dark"] .topbar-teams .team-chip.on { color: #08272B; }
 
 /* mentors/participants legend beside the chain, same line */
 .topbar-legend {
