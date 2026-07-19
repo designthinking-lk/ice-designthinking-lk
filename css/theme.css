@@ -45,6 +45,23 @@
 
 /* Night theme — toggled by the app bar's day/night button (data-theme on <html>,
    persisted in localStorage as ice.theme). Brand accents stay unchanged. */
+/* Day/night cross-fade — applyTheme() puts .theme-fade on <html> for the
+   duration of the switch so every colour interpolates instead of snapping.
+   !important deliberately overrides per-element transitions while active;
+   the class is removed ~450ms later so hover animations are unaffected. */
+html.theme-fade,
+html.theme-fade *,
+html.theme-fade *::before,
+html.theme-fade *::after {
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease,
+    fill 0.4s ease,
+    stroke 0.4s ease,
+    box-shadow 0.4s ease !important;
+}
+
 :root[data-theme="dark"] {
   /* At night the purple accent loses contrast — the brand's cyan pops. */
   --color-accent:       #00D7EE;

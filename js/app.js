@@ -91,8 +91,17 @@
   // ---- day / night theme ----
   // data-theme on <html> (also set pre-paint by an inline snippet in
   // index.html); persisted as ice.theme.
-  function applyTheme(dark) {
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  // animate: cross-fade the switch via .theme-fade (theme.css); off at boot
+  // so the initial paint stays instant.
+  var themeFadeTimer = null;
+  function applyTheme(dark, animate) {
+    var root = document.documentElement;
+    if (animate) {
+      root.classList.add('theme-fade');
+      clearTimeout(themeFadeTimer);
+      themeFadeTimer = setTimeout(function () { root.classList.remove('theme-fade'); }, 450);
+    }
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
     var btn = $('#themeToggle');
     if (btn) {
       btn.innerHTML = '<i class="fa-solid ' + (dark ? 'fa-sun' : 'fa-moon') + '"></i>';
@@ -2805,7 +2814,7 @@
       case 'toggle-theme': {
         var dark = !isDark();
         try { localStorage.setItem('ice.theme', dark ? 'dark' : 'light'); } catch (err) { /* private mode */ }
-        applyTheme(dark);
+        applyTheme(dark, true);
         break;
       }
       case 'new-team': teamForm(); break;
