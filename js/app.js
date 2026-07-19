@@ -1349,8 +1349,11 @@
       '<input class="cinput cname" name="lastName" maxlength="50" placeholder="Last name" value="' + esc(lastName) + '">' +
       '</div>' +
       '<input type="hidden" name="gender" value="' + esc(gender) + '">' +
-      '<div class="cemail" id="proposedEmail" hidden><i class="fa-regular fa-envelope"></i>' +
-      '<span class="cemail-addr" id="cemailAddr"></span>' +
+      // registration: live-proposed handle (hidden until a name is typed);
+      // edit: the member's minted workshop address, shown as-is
+      '<div class="cemail" id="proposedEmail"' + (!isNew && u.workEmail ? '' : ' hidden') + '>' +
+      '<i class="fa-regular fa-envelope"></i>' +
+      '<span class="cemail-addr" id="cemailAddr">' + esc(!isNew && u.workEmail ? u.workEmail : '') + '</span>' +
       '<span class="cemail-status" id="cemailStatus" data-status=""></span></div>' +
       '<label class="cfield"><i class="fa-solid fa-building"></i><input class="cinput" name="affiliation" maxlength="70" placeholder="Affiliation — university, company" value="' + esc(u.affiliation || '') + '"></label>' +
       '<label class="cfield"><i class="fa-solid fa-lightbulb"></i><input class="cinput" name="expertise" maxlength="90" placeholder="Expertise — comma separated topics" value="' + esc(u.expertise || '') + '"></label>' +
@@ -1462,6 +1465,16 @@
     personaTimer = setTimeout(refreshPersona, 1400);
   }
 
+  // Last generated persona per project, kept locally so re-opening the card
+  // shows it instantly — the LLM is only asked when the fields really changed.
+  function personaCacheKey() { return 'ice.persona.' + A.getProject(); }
+  function readPersonaCache() {
+    try { return JSON.parse(localStorage.getItem(personaCacheKey()) || 'null'); } catch (e) { return null; }
+  }
+  function writePersonaCache(payload, text) {
+    try { localStorage.setItem(personaCacheKey(), JSON.stringify({ p: payload, t: text })); } catch (e) { /* quota */ }
+  }
+
   async function refreshPersona() {
     if (personaDisabled) return;
     var f = personaFields();
@@ -1470,6 +1483,13 @@
     var payload = JSON.stringify(f);
     if (payload === personaLastPayload) return;
     personaLastPayload = payload;
+    // unchanged since the last generation → reuse it, no request, no delay
+    var cached = readPersonaCache();
+    if (cached && cached.p === payload && cached.t) {
+      var elc = $('#personaText');
+      if (elc) { elc.textContent = cached.t; elc.classList.remove('thinking'); }
+      return;
+    }
     var el = $('#personaText');
     if (el) el.classList.add('thinking');
     try {
@@ -1481,6 +1501,7 @@
       if (!now || JSON.stringify(now) !== payload) return;
       var out = $('#personaText');
       if (out && r.text) out.textContent = r.text;
+      if (r.text) writePersonaCache(payload, r.text);
     } catch (e) {
       /* persona is decorative — fail silently */
     } finally {
@@ -1924,7 +1945,7 @@
   // View-only 3-day agenda: columns are workshop days, rows 8:00 → 18:00.
   // Renders a skeleton immediately; initProgram() swaps in real events from
   // the backend's Google Calendar pull once it's configured.
-  var PG_START = 8, PG_END = 18, PG_HOUR_PX = 60;
+  var PG_START = 8, PG_END = 18, PG_HOUR_PX = 48; // compact: all slots fit unscrolled
 
   function programDayLabels() {
     var p = proj();

@@ -554,6 +554,7 @@ textarea.input { resize: vertical; min-height: 90px; }
 .cg-btn.selected:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.5); color: #fff; }
 /* proposed workshop email under the name */
 .cemail { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: rgba(255,255,255,0.9); }
+.cemail[hidden] { display: none; } /* our display:flex must not defeat [hidden] */
 .cemail > i { width: 15px; text-align: center; color: rgba(255,255,255,0.7); font-size: 11px; flex: none; }
 .cemail-addr { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cemail-status { flex: none; width: 14px; text-align: center; font-size: 11px; }
@@ -1256,10 +1257,10 @@ body.hive-full .project-switcher select { pointer-events: auto; }
   padding: 12px 0 14px; white-space: nowrap;
 }
 .pg-day-body {
-  position: relative; height: 600px; /* (18 − 8) h × 60px */
+  position: relative; height: 480px; /* (18 − 8) h × 48px — fits unscrolled */
   border-top: 1px solid var(--border);
   background: repeating-linear-gradient(to bottom,
-    transparent 0, transparent 59px, var(--border) 59px, var(--border) 60px);
+    transparent 0, transparent 47px, var(--border) 47px, var(--border) 48px);
 }
 .pg-event {
   position: absolute; left: 4px; right: 4px; border-radius: 10px;
