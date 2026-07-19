@@ -1972,36 +1972,46 @@
     A.api('program').then(function (r) {
       if (!r.configured || !(r.events || []).length) return; // keep the skeleton
       if (!$('.program-grid')) return; // view changed meanwhile
-      // bucket events into the three day columns by calendar date
+      // Bucket by the CALENDAR's wall-clock date (startLocal: "yyyy-mm-ddThh:mm:ss")
+      // so the agenda reads the same for every viewer, in any timezone.
       var p = proj();
       var dayKeys = [];
       if (p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) {
         var d0 = new Date(p.startDate + 'T12:00:00');
-        for (var i = 0; i < 3; i++) dayKeys.push(new Date(d0.getTime() + i * 864e5).toDateString());
+        for (var i = 0; i < 3; i++) {
+          var d = new Date(d0.getTime() + i * 864e5);
+          dayKeys.push(d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+        }
       } else {
         // no project dates: take the first three distinct event days
         r.events.forEach(function (ev) {
-          var k = new Date(ev.start).toDateString();
+          var k = (ev.startLocal || ev.start).slice(0, 10);
           if (dayKeys.indexOf(k) === -1 && dayKeys.length < 3) dayKeys.push(k);
         });
+      }
+      function ampm(hhmm) {
+        var h = +hhmm.slice(0, 2), m = hhmm.slice(3, 5);
+        return ((h % 12) || 12) + ':' + m + (h < 12 ? ' AM' : ' PM');
       }
       $all('.pg-day-body').forEach(function (body) {
         var di = Number(body.getAttribute('data-di'));
         var html = '';
         r.events.forEach(function (ev) {
-          if (ev.allDay) return;
-          var s = new Date(ev.start), e = new Date(ev.end);
-          if (s.toDateString() !== dayKeys[di]) return;
-          var sh = Math.max(PG_START, s.getHours() + s.getMinutes() / 60);
-          var eh = Math.min(PG_END, e.getHours() + e.getMinutes() / 60);
+          if (ev.allDay || !ev.startLocal) return;
+          if (ev.startLocal.slice(0, 10) !== dayKeys[di]) return;
+          var sh = +ev.startLocal.slice(11, 13) + ev.startLocal.slice(14, 16) / 60;
+          var eh = +ev.endLocal.slice(11, 13) + ev.endLocal.slice(14, 16) / 60;
+          if (ev.endLocal.slice(0, 10) !== dayKeys[di]) eh = PG_END; // spills past midnight
+          sh = Math.max(PG_START, sh); eh = Math.min(PG_END, eh);
           if (eh <= sh) return;
-          var t = s.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
           html += '<div class="pg-event pg-real" style="top:' + ((sh - PG_START) * PG_HOUR_PX) + 'px;height:' +
             ((eh - sh) * PG_HOUR_PX - 6) + 'px">' +
             '<div class="pg-ev-title">' + esc(ev.title) + '</div>' +
-            '<div class="pg-ev-meta">' + esc(t) + (ev.location ? ' · ' + esc(ev.location) : '') + '</div></div>';
+            '<div class="pg-ev-meta">' + ampm(ev.startLocal.slice(11, 16)) +
+            (ev.location ? ' · ' + esc(ev.location) : '') + '</div></div>';
         });
-        if (html) body.innerHTML = html;
+        body.innerHTML = html; // configured: empty days go clean, not skeleton
       });
     }).catch(function () { /* skeleton stays */ });
   }
