@@ -1487,13 +1487,13 @@ body.landing-bg .side-oct {
 .ab-step h3 { font-size: 15.5px; margin: 0; letter-spacing: -0.01em; }
 .ab-step p { color: var(--text-body); font-size: 13.5px; line-height: 1.5; }
 
-/* curriculum — six phase blocks, accent keyword + plain list */
+/* curriculum — six phase blocks, accent keyword running into its line */
 .ab-curriculum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 28px; }
 .ab-cur h3 {
-  font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--color-accent); margin: 0 0 5px;
+  display: inline; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--color-accent); margin: 0 6px 0 0;
 }
-.ab-cur p { color: var(--text-body); font-size: 13.5px; line-height: 1.5; }
+.ab-cur p { display: inline; color: var(--text-body); font-size: 13.5px; line-height: 1.5; }
 
 /* designer — portrait sized to sit flush with the bio block's height */
 .ab-designer { display: flex; gap: 24px; align-items: center; }
