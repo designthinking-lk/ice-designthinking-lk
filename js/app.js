@@ -558,8 +558,8 @@
 
   // Landing (#/): chrome only, empty middle apart from the feature video from
   // the last workshop — fades in after a beat, edges masked into the page.
-  // Lower-left: the whole pitch in one glance (tagline, last workshop's
-  // numbers, a door into #/about) — sits in the video mask's bottom fade.
+  // Lower-right: the whole pitch in one glance (tagline + last workshop's
+  // numbers), stacked just above the About fab — which is the door to #/about.
   function viewLanding() {
     return '<div class="landing">' +
       '<div class="feature-video">' +
@@ -568,14 +568,14 @@
       'allow="autoplay; encrypted-media" tabindex="-1"></iframe>' +
       '</div>' +
       '<div class="landing-intro">' +
-      '<div class="li-kicker">Innovation &middot; Creativity &middot; Entrepreneurship</div>' +
+      '<div class="li-kicker">Innovation<br>Creativity<br>Entrepreneurship</div>' +
+      '<div class="li-year">ICE2025</div>' +
       '<div class="li-stats">' +
       '<span class="stat"><b>30</b><span>participants</span></span>' +
       '<span class="stat"><b>6</b><span>universities</span></span>' +
       '<span class="stat"><b>14</b><span>facilitators</span></span>' +
       '<span class="stat"><b>40</b><span>hours in 3 days</span></span>' +
       '</div>' +
-      '<a class="li-more" href="#/about">About the program <i class="fa-solid fa-arrow-right"></i></a>' +
       '</div></div>';
   }
 

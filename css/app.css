@@ -234,12 +234,14 @@ button { font-family: inherit; }
    washes through, keeping the footage soft behind the UI */
 .feature-video.show { opacity: 0.8; transform: none; }
 
-/* The one-glance pitch, lower-left — inside the video mask's bottom fade so
-   it reads on near-plain page background. Fades in on its own clock (the
-   video handshake can take seconds; the words shouldn't wait for it). */
+/* The one-glance pitch, lower-right — a single stacked column (three brand
+   words, last workshop's name, its numbers) ending just above the About fab,
+   which is the door into #/about. Fades in on its own clock (the video
+   handshake can take seconds; the words shouldn't wait for it). */
 .landing-intro {
-  position: absolute; left: 208px; bottom: 72px; z-index: 1;
-  pointer-events: none; /* only the link below re-enables clicks */
+  position: absolute; right: 36px; bottom: 78px; z-index: 1;
+  text-align: right;
+  pointer-events: none; /* purely informative — the About fab below is the click */
   opacity: 0; animation: li-in 1.2s ease 0.6s forwards;
   /* halo of the page colour keeps the words readable over moving footage */
   text-shadow: 0 1px 14px var(--bg), 0 0 3px var(--bg);
@@ -248,20 +250,19 @@ button { font-family: inherit; }
 .landing-intro .li-kicker {
   font-family: var(--font-display); font-weight: 800; font-size: 12.5px;
   letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent);
+  line-height: 1.9;
 }
-.landing-intro .li-stats { display: flex; gap: 30px; flex-wrap: wrap; margin-top: 14px; }
-.landing-intro .li-more {
-  display: inline-flex; align-items: center; gap: 8px; margin-top: 18px;
-  pointer-events: auto; text-decoration: none;
-  font-family: var(--font-display); font-weight: 700; font-size: 14.5px;
-  color: var(--text); transition: color 0.15s, gap 0.15s;
+.landing-intro .li-year {
+  font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  letter-spacing: -0.01em; margin-top: 14px;
 }
-.landing-intro .li-more i { font-size: 12px; color: var(--text-faint); transition: color 0.15s; }
-.landing-intro .li-more:hover { color: var(--color-accent); gap: 12px; }
-.landing-intro .li-more:hover i { color: var(--color-accent); }
-@media (max-width: 860px) {
-  .landing-intro { left: 24px; right: 24px; bottom: 88px; }
-  .landing-intro .li-stats { gap: 20px; }
+.landing-intro .li-stats {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 12px; margin-top: 12px;
+}
+@media (max-height: 760px) {
+  .landing-intro .li-stats { gap: 8px; }
+  .landing-intro .li-stats .stat b { font-size: 24px; }
 }
 
 /* -------------------------------------------------------------------- hero */
