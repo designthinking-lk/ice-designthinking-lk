@@ -602,6 +602,9 @@
       'title="ICE workshop highlights" frameborder="0" ' +
       'allow="autoplay; encrypted-media" tabindex="-1"></iframe>' +
       '</div>' +
+      // loading veil: drifts a subtle gradient over the video slot until the
+      // playback handshake reveals the footage (initLandingVideo crossfades it)
+      '<div class="landing-loader"></div>' +
       '<div class="landing-intro">' +
       '<div class="li-year">ICE2025</div>' +
       '<div class="li-stats">' +
@@ -624,7 +627,12 @@
     function show(delay) {
       if (shown) return;
       shown = true;
-      setTimeout(function () { fv.classList.add('show'); }, delay);
+      setTimeout(function () {
+        fv.classList.add('show');
+        // crossfade: the veil fades out on the same clock the video fades in
+        var veil = fv.parentElement && fv.parentElement.querySelector('.landing-loader');
+        if (veil) veil.classList.add('done');
+      }, delay);
     }
     function onMsg(e) {
       if (String(e.origin).indexOf('youtube.com') === -1) return;

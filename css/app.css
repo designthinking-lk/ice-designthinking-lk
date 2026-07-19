@@ -234,6 +234,27 @@ button { font-family: inherit; }
    washes through, keeping the footage soft behind the UI */
 .feature-video.show { opacity: 0.8; transform: none; }
 
+/* Loading veil — sits above the video (DOM order; .landing-intro's z-index 1
+   keeps the words above it) while the YouTube handshake runs (up to ~8 s).
+   A very soft gradient of near-page tones drifts slowly so the wait reads as
+   deliberate; it crossfades away on the video's own 2 s reveal. */
+.landing-loader {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, #ffffff 0%, #f1f4fb 25%, #edf7fa 50%, #f5f0fc 75%, #ffffff 100%);
+  background-size: 300% 300%;
+  animation: veil-drift 6s ease-in-out infinite alternate;
+  transition: opacity 2s ease;
+}
+:root[data-theme="dark"] .landing-loader {
+  background: linear-gradient(115deg, #121316 0%, #171a21 25%, #141a1e 50%, #191623 75%, #121316 100%);
+  background-size: 300% 300%;
+}
+.landing-loader.done { opacity: 0; }
+@keyframes veil-drift {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 100%; }
+}
+
 /* The one-glance pitch, lower-right — a stacked column (last workshop's
    name, its numbers) ending just above the About fab, which is the door
    into #/about. Fades in on its own clock (the video handshake can take
