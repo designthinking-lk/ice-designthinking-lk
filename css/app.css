@@ -1232,13 +1232,16 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 .tb-counts { color: var(--text-muted); font-size: 12.5px; white-space: nowrap; }
 .tb-counts.full { color: #188038; }
 .tb-counts i { font-size: 11px; }
-.tb-member { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 14px; min-height: 34px; }
+/* card slots: 2-column grid — the 7 slots land in 4 rows (mentors on top) */
+.tb-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 12px; }
+.tb-member { display: flex; align-items: center; gap: 7px; padding: 2px 0; font-size: 13.5px; min-height: 30px; min-width: 0; }
 .tb-member > a { color: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tb-member .avatar-sm { flex: none; }
 .tb-empty {
-  color: var(--text-faint); font-size: 12px; justify-content: center;
-  border: 1px dashed var(--border); border-radius: var(--radius-sm); margin: 3px 0; min-height: 30px;
+  color: var(--text-faint); font-size: 11.5px; justify-content: center;
+  border: 1px dashed var(--border); border-radius: var(--radius-sm); min-height: 28px;
 }
+.tb-tie { flex: none; font-size: 11px; color: var(--color-accent); }
 .tb-tag {
   flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px;
   background: rgba(97, 0, 255, 0.08); color: var(--color-accent);

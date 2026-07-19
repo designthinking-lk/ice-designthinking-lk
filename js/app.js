@@ -2582,6 +2582,14 @@
   // Mentors and admins occupy mentor slots; everyone else is a participant.
   function teamSlot(u) { return u.role === 'participant' ? 'participant' : 'mentor'; }
 
+  // Compact display name for the tight 2-column team cards:
+  // "Sankha Cooray" -> "Sankha C" (full name stays in the tooltip).
+  function shortName(name) {
+    var parts = String(name || '').trim().split(/\s+/);
+    if (parts.length < 2) return parts[0] || '';
+    return parts[0] + ' ' + parts[parts.length - 1].charAt(0).toUpperCase();
+  }
+
   function adminTeamsSection(d) {
     var users = d.users || [];
     if (!users.length) return '<div class="empty"><i class="fa-solid fa-users"></i>Nobody has registered yet.</div>';
@@ -2609,25 +2617,28 @@
       });
     });
 
+    // A mentor's pill is replaced by a tie icon here — the 2-column cells are
+    // too narrow for both a name and a tag.
     function memberRow(u, L) {
       return '<div class="tb-member">' + avatar(u, 'avatar-sm') +
-        '<a href="#/profile/' + esc(u.id) + '">' + esc(u.name) + '</a>' +
-        (teamSlot(u) === 'mentor' ? '<span class="tb-tag">mentor</span>' : '') +
+        '<a href="#/profile/' + esc(u.id) + '" title="' + esc(u.name) + '">' + esc(shortName(u.name)) + '</a>' +
+        (teamSlot(u) === 'mentor' ? '<i class="fa-solid fa-user-tie tb-tie" title="mentor"></i>' : '') +
         '<button class="tb-remove" type="button" data-action="unassign-team" data-id="' + esc(u.id) + '" title="Remove from Team ' + L + '"><i class="fa-solid fa-xmark"></i></button></div>';
     }
 
+    // Slots flow into a 2-column grid: [M M] [P P] [P P] [P –] — 4 rows.
     var cards = TEAM_LETTERS.map(function (L) {
       var slots = '';
       teamOf[L].mentor.forEach(function (u) { slots += memberRow(u, L); });
-      for (var i = counts[L].mentor; i < TEAM_CAP.mentor; i++) slots += '<div class="tb-member tb-empty">mentor slot</div>';
+      for (var i = counts[L].mentor; i < TEAM_CAP.mentor; i++) slots += '<div class="tb-member tb-empty">mentor</div>';
       teamOf[L].participant.forEach(function (u) { slots += memberRow(u, L); });
-      for (var j = counts[L].participant; j < TEAM_CAP.participant; j++) slots += '<div class="tb-member tb-empty">participant slot</div>';
+      for (var j = counts[L].participant; j < TEAM_CAP.participant; j++) slots += '<div class="tb-member tb-empty">participant</div>';
       var full = counts[L].mentor >= TEAM_CAP.mentor && counts[L].participant >= TEAM_CAP.participant;
       return '<div class="tb-card"><div class="tb-head"><h3>Team ' + L + '</h3>' +
         '<span class="tb-counts' + (full ? ' full' : '') + '">' +
         counts[L].mentor + '/' + TEAM_CAP.mentor + ' <i class="fa-solid fa-user-tie" title="mentors"></i> &nbsp; ' +
         counts[L].participant + '/' + TEAM_CAP.participant + ' <i class="fa-solid fa-user" title="participants"></i></span>' +
-        '</div>' + slots + '</div>';
+        '</div><div class="tb-slots">' + slots + '</div></div>';
     }).join('');
 
     // Unassigned pool — organizers (admins) sit this out; mentors first.
