@@ -355,6 +355,36 @@ a.card { color: inherit; display: block; }
 }
 .role-tag.mentor { background: rgba(97, 0, 255, 0.09); color: var(--color-accent); }
 .role-tag.admin { background: rgba(14, 15, 17, 0.08); color: var(--text); }
+.role-tag.participant { background: rgba(0, 215, 238, 0.12); color: #007c8a; }
+:root[data-theme="dark"] .role-tag.participant { color: #4fd8e8; }
+:root[data-theme="dark"] .role-tag.admin { background: rgba(255, 255, 255, 0.10); }
+.role-tag.none { background: rgba(14, 15, 17, 0.05); color: var(--text-muted); font-style: italic; text-transform: none; }
+
+/* admin People tab — role chips with a remove ×, plus the "+ add" expander */
+.role-cell { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.role-cell .chip-x {
+  border: none; background: none; padding: 0 0 0 2px; margin-right: -3px;
+  cursor: pointer; color: inherit; opacity: 0.55; font-size: 10px; line-height: 1;
+}
+.role-cell .chip-x:hover { opacity: 1; }
+.role-addbtn, .role-addopt {
+  border: 1px dashed var(--border); background: none; border-radius: 999px;
+  padding: 3px 9px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--text-muted); cursor: pointer;
+}
+.role-addbtn:hover { color: var(--text); border-color: var(--text-muted); }
+.role-addopt { border-style: solid; text-transform: uppercase; }
+.role-addopt:hover { color: var(--color-accent); border-color: var(--color-accent); }
+
+/* the minted @designthinking.lk address, under the personal email */
+.dt-mail { color: var(--text-muted); font-size: 12px; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+
+/* topbar note for a signed-in member whose roles were all removed */
+.topbar-norole {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  border: 1px dashed var(--border); border-radius: 999px; padding: 5px 11px;
+}
 .person-affil { color: var(--text-muted); font-size: 13px; }
 .person-bio { color: var(--text-body); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 10px; }
 .person-expertise { color: var(--color-accent-dark); font-size: 13px; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 10px; }

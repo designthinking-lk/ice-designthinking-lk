@@ -88,6 +88,36 @@
   function me() { return state.data && state.data.me; }
   function signedIn() { return !!A.getToken(); }
 
+  // ---- roles ----
+  // users.role can hold up to 2 comma-separated roles: 'admin' plus one of
+  // 'participant'/'mentor' (never both). 'none' = every role removed — the
+  // person keeps their data but gets the visitor view until a role comes
+  // back. Blank/legacy counts as participant. Mirrors rolesOf_ in the backend.
+  function rolesOf(u) {
+    if (!u) return [];
+    var raw = String(u.role || '').trim().toLowerCase();
+    if (raw === 'none') return [];
+    if (!raw) return ['participant'];
+    var out = [];
+    raw.split(',').forEach(function (r) {
+      r = r.trim();
+      if (['admin', 'participant', 'mentor'].indexOf(r) !== -1 && out.indexOf(r) === -1) out.push(r);
+    });
+    return out.length ? out : ['participant'];
+  }
+  function hasRoleU(u, role) { return rolesOf(u).indexOf(role) !== -1; }
+  function hasAccess(u) { return rolesOf(u).length > 0; }
+  // Roles an admin can still add to this person (max 2; participant/mentor
+  // are mutually exclusive).
+  function addableRoles(u) {
+    var roles = rolesOf(u);
+    if (roles.length >= 2) return [];
+    var out = [];
+    if (roles.indexOf('admin') === -1) out.push('admin');
+    if (roles.indexOf('participant') === -1 && roles.indexOf('mentor') === -1) out.push('participant', 'mentor');
+    return out;
+  }
+
   // ---- day / night theme ----
   // data-theme on <html> (also set pre-paint by an inline snippet in
   // index.html); persisted as ice.theme.
@@ -176,7 +206,7 @@
     setRank(maxLen);
     later(function () { collapse(maxLen - 1); }, BRAND_HOLD);
   }
-  function isMentor() { var m = me(); return !!(m && m.role === 'mentor'); }
+  function isMentor() { return hasRoleU(me(), 'mentor'); }
   // Mentors and admins may post announcements.
   function canAnnounce() { return !!(state.data && (state.data.isAdmin || isMentor())); }
 
@@ -228,11 +258,15 @@
     var navTools = $('#navTools');
     var navProgram = $('#navProgram');
     var navAdmin = $('#navAdmin');
-    if (navTools) navTools.hidden = !loggedIn;
-    if (navProgram) navProgram.hidden = !loggedIn;
+    // A registered member whose every role was removed gets the visitor
+    // chrome (no member nav) — only the avatar menu remains, to sign out.
+    var noRole = !!(d.me && !hasAccess(d.me));
+    if (navTools) navTools.hidden = !loggedIn || noRole;
+    if (navProgram) navProgram.hidden = !loggedIn || noRole;
     if (navAdmin) navAdmin.hidden = !d.isAdmin;
     if (signedIn() && d.me) {
       actions.innerHTML =
+        (noRole ? '<span class="topbar-norole" title="Your account has no assigned role — contact an organizer to restore access. Your data is safe."><i class="fa-solid fa-circle-info"></i>No role assigned</span>' : '') +
         '<button class="avatar-circle-btn" data-action="user-menu" aria-label="Account" title="' + esc(d.me.name) + '">' +
         avatar(d.me, 'avatar-sm') + '</button>';
     } else if (signedIn()) {
@@ -251,7 +285,7 @@
     // chat & broadcasts pane — for registered participants (DMs need a
     // workshop account). Hide the sidebar button + force-close otherwise.
     var chatBtn = $('#navChatBtn');
-    var showChat = signedIn() && !!d.me;
+    var showChat = signedIn() && !!d.me && !noRole;
     if (chatBtn) chatBtn.hidden = !showChat;
     if (!showChat) {
       var pane = $('#chatpane');
@@ -371,7 +405,7 @@
     var users = (state.data && state.data.users) || [];
     var mine = me();
     var list = users.filter(function (u) {
-      return workEmailOf(u) && (!mine || u.id !== mine.id);
+      return hasAccess(u) && workEmailOf(u) && (!mine || u.id !== mine.id);
     }).sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
     if (!list.length) {
       return '<div class="chatpane-empty"><i class="fa-regular fa-comment-dots"></i>' +
@@ -381,7 +415,7 @@
       return '<button class="chat-row" data-action="chat-dm" data-email="' + esc(workEmailOf(u)) + '" title="Message ' + esc(u.name) + '">' +
         avatar(u, 'avatar-sm') +
         '<span class="chat-row-info"><span class="chat-row-name">' + esc(u.name) +
-        (u.role === 'mentor' ? ' <i class="fa-solid fa-star chat-row-star" title="Mentor"></i>' : '') + '</span>' +
+        (hasRoleU(u, 'mentor') ? ' <i class="fa-solid fa-star chat-row-star" title="Mentor"></i>' : '') + '</span>' +
         (u.affiliation ? '<span class="chat-row-sub">' + esc(u.affiliation) + '</span>' : '') + '</span>' +
         '<i class="fa-regular fa-paper-plane chat-row-go"></i></button>';
     }).join('');
@@ -459,14 +493,14 @@
   }
 
   function personCard(u) {
-    var isMentor = u.role === 'mentor';
+    var isMentor = hasRoleU(u, 'mentor');
     var skills = (u.skills || []).slice(0, 3).map(function (s) { return skillChip(s, false, false); }).join('');
     var more = (u.skills || []).length > 3 ? '<span class="more">+' + ((u.skills || []).length - 3) + ' more</span>' : '';
     return '<a class="card person' + (isMentor ? ' mentor' : '') + '" href="#/profile/' + esc(u.id) + '">' +
       '<div class="person-top">' + avatar(u) +
       '<div><div class="person-name">' + esc(u.name) +
       (isMentor ? '<span class="role-tag mentor"><i class="fa-solid fa-star"></i>Mentor</span>' : '') +
-      (u.role === 'admin' ? '<span class="role-tag admin"><i class="fa-solid fa-shield-halved"></i>Organizer</span>' : '') +
+      (hasRoleU(u, 'admin') ? '<span class="role-tag admin"><i class="fa-solid fa-shield-halved"></i>Organizer</span>' : '') +
       '</div>' +
       (u.affiliation ? '<div class="person-affil">' + esc(u.affiliation) + '</div>' : '') +
       '</div></div>' +
@@ -547,9 +581,9 @@
 
   // mentors/participants counts — shown beside the team chain in the app bar
   function topbarLegendHtml() {
-    var users = (state.data && state.data.users) || [];
-    var mentors = users.filter(function (u) { return u.role === 'mentor'; }).length;
-    var participants = users.length - mentors;
+    var users = ((state.data && state.data.users) || []).filter(hasAccess);
+    var mentors = users.filter(function (u) { return hasRoleU(u, 'mentor'); }).length;
+    var participants = users.filter(function (u) { return hasRoleU(u, 'participant'); }).length;
     return '<div class="topbar-legend">' +
       '<span><span class="dot mentor"></span>' + mentors + ' mentor' + (mentors === 1 ? '' : 's') + '</span>' +
       '<span><span class="dot participant"></span>' + participants + ' participant' + (participants === 1 ? '' : 's') + '</span>' +
@@ -647,7 +681,8 @@
   function buildWordmark() {
     var word = $('#word');
     if (!word) return;
-    var users = (state.data && state.data.users) || [];
+    // role-less rows (access removed) stay off the hive
+    var users = ((state.data && state.data.users) || []).filter(hasAccess);
     var built = wordCells();
     var cells = built.cells;
     var w = 74, minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
@@ -670,7 +705,7 @@
       var u = cellUser[i];
       var el;
       if (u) {
-        var mentor = u.role === 'mentor';
+        var mentor = hasRoleU(u, 'mentor');
         var online = ((state.data && state.data.online) || []).indexOf(u.id) !== -1;
         el = document.createElement('a');
         el.className = 'oct ' + (mentor ? 'm' : 'p');
@@ -827,12 +862,14 @@
     return '<div class="page-head">' + avatar(u, 'avatar-lg') +
       '<div class="info"><h1>' + esc(u.name) + '</h1>' +
       '<div class="person-name">' +
-      (u.role === 'mentor' ? '<span class="role-tag mentor"><i class="fa-solid fa-star"></i>Mentor</span>' : '') +
-      (u.role === 'admin' ? '<span class="role-tag admin"><i class="fa-solid fa-shield-halved"></i>Organizer</span>' : '') + '</div>' +
+      (hasRoleU(u, 'mentor') ? '<span class="role-tag mentor"><i class="fa-solid fa-star"></i>Mentor</span>' : '') +
+      (hasRoleU(u, 'admin') ? '<span class="role-tag admin"><i class="fa-solid fa-shield-halved"></i>Organizer</span>' : '') + '</div>' +
       '<div class="meta-row">' +
       (u.affiliation ? '<span><i class="fa-solid fa-building"></i>' + esc(u.affiliation) + '</span>' : '') +
       (u.email ? '<span><i class="fa-regular fa-envelope"></i>' + esc(u.email) + '</span>' : '') +
       '</div>' +
+      // the minted @designthinking.lk address, on its own line under the personal email
+      (u.workEmail ? '<div class="meta-row"><span title="Workshop @designthinking.lk account"><i class="fa-regular fa-comment-dots"></i>' + esc(u.workEmail) + '</span></div>' : '') +
       '<div>' +
       (isMe ? '<a class="btn btn-outline btn-sm" href="#/me"><i class="fa-solid fa-pen"></i>Edit profile</a>'
             : (signedIn() && me() ? '<button class="btn btn-primary btn-sm" data-action="chat-dm" data-email="' + esc(u.workEmail || u.email || '') + '"><i class="fa-regular fa-message"></i><span class="label">Message</span><span class="spin"></span></button>'
@@ -1350,11 +1387,11 @@
       '<div class="idcard-head"><span class="idcard-brand">' + brandHtml(true) + '</span>' +
       // role is self-selected on the card: member (participant/student) or
       // mentor (facilitator) — admins keep their fixed organizer badge
-      (u.role === 'admin'
+      (hasRoleU(u, 'admin')
         ? '<span class="idcard-type">ORGANIZER</span>'
         : '<span class="idcard-type idcard-type-select"><select name="roleSel" aria-label="Your role">' +
-          '<option value="participant"' + (u.role === 'mentor' ? '' : ' selected') + '>Member</option>' +
-          '<option value="mentor"' + (u.role === 'mentor' ? ' selected' : '') + '>Mentor</option>' +
+          '<option value="participant"' + (hasRoleU(u, 'mentor') ? '' : ' selected') + '>Member</option>' +
+          '<option value="mentor"' + (hasRoleU(u, 'mentor') ? ' selected' : '') + '>Mentor</option>' +
           '</select><i class="fa-solid fa-caret-down"></i></span>') +
       '</div>' +
       '<div class="idcard-main">' +
@@ -1685,6 +1722,11 @@
 
   function viewMe() {
     if (!signedIn() || !me()) { location.hash = signedIn() ? '#/register' : '#/'; return ''; }
+    if (!hasAccess(me())) {
+      return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-user-lock"></i>' +
+        'Your account has no assigned role, so the platform is read-only for now.<br>' +
+        'Contact an organizer to restore access — your profile and data are safe.</div>';
+    }
     if (!formReady()) return profileScaffold('Edit profile', '', formLoading());
     setTimeout(afterProfileForm, 0);
     return profileScaffold('Edit profile', '', profileForm(me(), false));
@@ -2540,20 +2582,49 @@
 
   // ---- admin sections (one per tab) ----
 
+  // Which user's "+ add role" options are expanded in the admin People table.
+  var roleMenuFor = null;
+
+  // One removable chip per role. Your own admin chip has no × — an admin can
+  // never strip themselves of admin (the backend refuses too).
+  function roleChipsHtml(u) {
+    var isSelf = !!(me() && me().id === u.id);
+    var roles = rolesOf(u);
+    var html = roles.map(function (r) {
+      var removable = !(r === 'admin' && isSelf);
+      return '<span class="role-tag ' + r + '">' + r +
+        (removable
+          ? '<button type="button" class="chip-x" data-action="role-remove" data-id="' + esc(u.id) + '" data-role="' + r + '" title="Remove ' + r + ' role"><i class="fa-solid fa-xmark"></i></button>'
+          : '') +
+        '</span>';
+    }).join('');
+    if (!roles.length) html += '<span class="role-tag none" title="No access until a role is assigned — nothing is deleted">no access</span>';
+    var addable = addableRoles(u);
+    if (addable.length) {
+      html += roleMenuFor === u.id
+        ? addable.map(function (r) {
+            return '<button type="button" class="role-addopt" data-action="role-add" data-id="' + esc(u.id) + '" data-role="' + r + '">' + r + '</button>';
+          }).join('') +
+          '<button type="button" class="role-addbtn" data-action="role-menu" data-id="' + esc(u.id) + '" title="Cancel"><i class="fa-solid fa-xmark"></i></button>'
+        : '<button type="button" class="role-addbtn" data-action="role-menu" data-id="' + esc(u.id) + '"><i class="fa-solid fa-plus"></i> add</button>';
+    }
+    return '<div class="role-cell">' + html + '</div>';
+  }
+
   function adminPeopleSection(d) {
     var users = (d.users || []).slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
     if (!users.length) return '<div class="empty"><i class="fa-solid fa-users"></i>Nobody has registered yet.</div>';
     var rows = users.map(function (u) {
       return '<tr><td style="display:flex;align-items:center;gap:10px">' + avatar(u, 'avatar-sm') +
         '<a href="#/profile/' + esc(u.id) + '">' + esc(u.name) + '</a></td>' +
-        '<td>' + esc(u.email || '') + '</td>' +
+        '<td>' + esc(u.email || '') +
+        (u.workEmail ? '<div class="dt-mail" title="Workshop @designthinking.lk account"><i class="fa-regular fa-comment-dots"></i>' + esc(u.workEmail) + '</div>' : '') +
+        '</td>' +
         '<td>' + esc(u.affiliation || '') + '</td>' +
-        '<td><select class="input" style="padding:5px 10px;font-size:13px" data-action="set-role" data-id="' + esc(u.id) + '">' +
-        ['participant', 'mentor', 'admin'].map(function (r) { return '<option' + (u.role === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') +
-        '</select></td>' +
+        '<td>' + roleChipsHtml(u) + '</td>' +
         '<td><button class="btn btn-ghost btn-sm" data-action="del-user" data-id="' + esc(u.id) + '" data-name="' + esc(u.name) + '"><i class="fa-regular fa-trash-can"></i></button></td></tr>';
     }).join('');
-    return '<div class="table-wrap"><table class="admin"><thead><tr><th>Name</th><th>Email</th><th>Affiliation</th><th>Role</th><th></th></tr></thead>' +
+    return '<div class="table-wrap"><table class="admin"><thead><tr><th>Name</th><th>Email</th><th>Affiliation</th><th>Roles</th><th></th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>';
   }
 
@@ -2579,8 +2650,11 @@
   var TEAM_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
   var TEAM_CAP = { participant: 5, mentor: 2 };
 
-  // Mentors and admins occupy mentor slots; everyone else is a participant.
-  function teamSlot(u) { return u.role === 'participant' ? 'participant' : 'mentor'; }
+  // Participant chip → participant slot; mentor chip (or admin-only) → mentor slot.
+  function teamSlot(u) { return hasRoleU(u, 'participant') ? 'participant' : 'mentor'; }
+  // Assignable to a team = holds a community role (an admin with a
+  // participant/mentor chip plays that role; admin-only people sit out).
+  function teamAssignable(u) { return hasRoleU(u, 'participant') || hasRoleU(u, 'mentor'); }
 
   // Compact display name for the tight 2-column team cards:
   // "Sankha Cooray" -> "Sankha C" (full name stays in the tooltip).
@@ -2641,8 +2715,8 @@
         '</div><div class="tb-slots">' + slots + '</div></div>';
     }).join('');
 
-    // Unassigned pool — organizers (admins) sit this out; mentors first.
-    var pool = users.filter(function (u) { return u.role !== 'admin' && !assigned[u.id]; })
+    // Unassigned pool — only people with a community role; mentors first.
+    var pool = users.filter(function (u) { return teamAssignable(u) && !assigned[u.id]; })
       .sort(function (a, b) {
         var s = teamSlot(a) === teamSlot(b) ? 0 : (teamSlot(a) === 'mentor' ? -1 : 1);
         return s || (a.name || '').localeCompare(b.name || '');
@@ -2660,7 +2734,7 @@
     }).join('');
 
     var assignedCount = Object.keys(assigned).length;
-    var assignable = users.filter(function (u) { return u.role !== 'admin'; }).length;
+    var assignable = users.filter(teamAssignable).length;
     return '<div class="teamboard">' +
       '<div class="panel"><h3><i class="fa-solid fa-user-plus"></i>Unassigned' +
       '<span class="tb-progress">' + assignedCount + ' of ' + assignable + ' assigned</span></h3>' +
@@ -2844,10 +2918,10 @@
     };
   }
 
-  async function confirmModal(title, body) {
+  async function confirmModal(title, body, yesLabel) {
     return new Promise(function (resolve) {
       modal('<h2>' + esc(title) + '</h2><p style="color:var(--text-body)">' + esc(body) + '</p>' +
-        '<div class="form-actions"><button class="btn btn-danger" id="confirmYes">Delete</button>' +
+        '<div class="form-actions"><button class="btn btn-danger" id="confirmYes">' + esc(yesLabel || 'Delete') + '</button>' +
         '<button class="btn btn-ghost" data-action="close-modal">Cancel</button></div>');
       $('#confirmYes').onclick = function () { closeModal(); resolve(true); };
       $('#modalRoot .modal-backdrop').addEventListener('click', function () { resolve(false); }, { once: true });
@@ -2998,6 +3072,36 @@
         }
         break;
       }
+      case 'role-menu': roleMenuFor = roleMenuFor === id ? null : id; route(); break;
+      case 'role-add': {
+        roleMenuFor = null;
+        t.disabled = true;
+        try {
+          await A.api('admin_add_role', { userId: id, role: t.getAttribute('data-role') });
+          toast('Role added');
+          await refresh();
+        } catch (err) { toast(err.message, true); route(); }
+        break;
+      }
+      case 'role-remove': {
+        var remRole = t.getAttribute('data-role');
+        var remUser = userById(id);
+        var remName = remUser ? remUser.name : 'this person';
+        // removing the last chip = losing access — worth an explicit confirm
+        if (remUser && rolesOf(remUser).length === 1) {
+          var sure = await confirmModal('Remove ' + remName + '’s last role?',
+            'They will lose access to the platform (visitor view only) until a role is assigned again. Nothing is deleted — re-adding a role brings everything back.',
+            'Remove role');
+          if (!sure) break;
+        }
+        t.disabled = true;
+        try {
+          await A.api('admin_remove_role', { userId: id, role: remRole });
+          toast('Role removed');
+          await refresh();
+        } catch (err) { toast(err.message, true); route(); }
+        break;
+      }
       case 'pick-image': pickImage(t); break;
       case 'photo-pick': { var pf = $('#photoFile'); if (pf) pf.click(); break; }
       case 'flip-card': { var card = $('#idcard'); if (card) card.classList.toggle('flipped'); break; }
@@ -3080,13 +3184,6 @@
   document.addEventListener('change', async function (e) {
     var t = e.target.closest('[data-action]');
     if (!t) return;
-    if (t.getAttribute('data-action') === 'set-role') {
-      try {
-        await A.api('admin_set_role', { userId: t.getAttribute('data-id'), role: t.value });
-        toast('Role updated');
-        refresh();
-      } catch (err) { toast(err.message, true); }
-    }
     if (t.getAttribute('data-action') === 'toggle-reg') {
       try {
         var r = await A.api('admin_set_config', { registrationOpen: t.checked });
