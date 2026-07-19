@@ -1271,6 +1271,43 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 /* --------------------------------------------------- skills constellation */
 .skills3d-wrap { position: absolute; inset: 0; overflow: hidden; }
 .skills3d-wrap canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+/* right-third detail panel: blurb + people + projects for the picked skill */
+.skills-side {
+  position: absolute; top: 16px; right: 20px; bottom: 16px;
+  width: min(320px, 28%); overflow-y: auto; padding: 6px 4px;
+}
+.skills-side .ss-empty {
+  height: 100%; display: flex; flex-direction: column; gap: 14px;
+  align-items: center; justify-content: center; text-align: center;
+  color: var(--text-faint); font-size: 13.5px; line-height: 1.6; padding: 0 26px;
+}
+.skills-side .ss-empty i { font-size: 22px; opacity: 0.5; }
+.ss-title {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-size: 22px; letter-spacing: -0.01em;
+  margin: 6px 0 10px; color: var(--text);
+}
+.ss-count {
+  background: var(--color-accent); color: #fff; border-radius: 999px;
+  font-size: 12px; font-weight: 700; padding: 2px 9px; font-family: var(--font-text);
+}
+.ss-desc { font-size: 13.5px; line-height: 1.6; color: var(--text-body); margin: 0 0 18px; min-height: 22px; }
+.ss-desc.thinking { opacity: 0.45; animation: pg-pulse 1.6s ease-in-out infinite; }
+.skills-side h4 {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--text-muted); margin: 18px 0 8px;
+}
+.ss-people { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ss-people a {
+  display: flex; align-items: center; gap: 10px; padding: 5px 8px; border-radius: 10px;
+  color: var(--text); font-size: 14px; font-weight: 600; text-decoration: none;
+}
+.ss-people a:hover { background: var(--bg-subtle); }
+.ss-projects { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ss-projects li { font-size: 13.5px; font-weight: 600; color: var(--text); padding: 4px 8px; }
+.ss-team { font-weight: 600; font-size: 12px; color: var(--text-muted); margin-left: 6px; }
+.ss-none { font-size: 13px; color: var(--text-faint); line-height: 1.55; margin: 0; }
+.ss-open { margin-top: 20px; }
 
 /* ----------------------------------------------------------------- program */
 /* View-only 3-day agenda: fixed-height flex columns. Cards grow with their

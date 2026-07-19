@@ -2175,7 +2175,74 @@
   function viewSkills() {
     var d = state.data;
     if (!d) return skeletons();
-    return '<div class="skills3d-wrap"><canvas id="skillsCanvas"></canvas></div>';
+    return '<div class="skills3d-wrap"><canvas id="skillsCanvas"></canvas>' +
+      '<aside class="skills-side" id="skillsSide">' +
+      '<div class="ss-empty"><i class="fa-solid fa-wand-magic-sparkles"></i>' +
+      'Tap a skill to explore it — what it is, who brings it, and what gets built with it.</div>' +
+      '</aside></div>';
+  }
+
+  // ---- skills side panel: LLM blurb + people + projects for a picked skill
+  function skillDescCache() {
+    try { return JSON.parse(localStorage.getItem('ice.skilldesc') || '{}'); } catch (e) { return {}; }
+  }
+
+  function selectSkillPanel(name) {
+    var side = $('#skillsSide');
+    if (!side) return;
+    var users = ((state.data && state.data.users) || []).filter(function (u) {
+      return (u.skills || []).indexOf(name) !== -1;
+    });
+    var peopleHtml = users.length
+      ? '<ul class="ss-people">' + users.map(function (u) {
+          return '<li><a href="#/profile/' + esc(u.id) + '">' + avatar(u, 'avatar-sm') +
+            '<span>' + esc(u.name) + '</span></a></li>';
+        }).join('') + '</ul>'
+      : '<p class="ss-none">No one has tagged this yet — people appear here as they register.</p>';
+    // projects = the teams those people are in, mapped to the project cards
+    var teams = homeTeams();
+    var seen = {}, projItems = '';
+    users.forEach(function (u) {
+      teams.forEach(function (t, ti) {
+        if ((t.members || []).indexOf(u.id) === -1 || seen[t.id]) return;
+        seen[t.id] = 1;
+        var p = DEMO_PROJECTS[ti];
+        projItems += '<li>' + esc(p ? p.t : t.name) + ' <span class="ss-team">' + esc(t.name) + '</span></li>';
+      });
+    });
+    var projHtml = projItems
+      ? '<ul class="ss-projects">' + projItems + '</ul>'
+      : '<p class="ss-none">Projects show up here once teams start building.</p>';
+    side.innerHTML =
+      '<h3 class="ss-title">' + esc(name) +
+      (users.length ? '<span class="ss-count">' + users.length + '</span>' : '') + '</h3>' +
+      '<p class="ss-desc thinking" id="ssDesc">&nbsp;</p>' +
+      '<h4>People</h4>' + peopleHtml +
+      '<h4>Projects</h4>' + projHtml +
+      (users.length ? '<button type="button" class="btn btn-outline btn-sm ss-open" data-action="filter-skill" data-skill="' + esc(name) + '">See them in People</button>' : '');
+    // description: localStorage first; otherwise Claude via the API (which
+    // itself caches per skill server-side)
+    var cached = skillDescCache()[name];
+    var el = $('#ssDesc');
+    if (cached) {
+      el.textContent = cached;
+      el.classList.remove('thinking');
+      return;
+    }
+    A.api('skill_info', { skill: name }).then(function (r) {
+      var out = $('#ssDesc');
+      if (!out) return;
+      out.classList.remove('thinking');
+      out.textContent = r.text || '';
+      if (r.text) {
+        var c = skillDescCache();
+        c[name] = r.text;
+        try { localStorage.setItem('ice.skilldesc', JSON.stringify(c)); } catch (e) { /* quota */ }
+      }
+    }).catch(function () {
+      var out = $('#ssDesc');
+      if (out) { out.classList.remove('thinking'); out.textContent = ''; }
+    });
   }
 
   function initSkillsGraph(canvas) {
@@ -2264,7 +2331,7 @@
         }
       }
     }
-    var vyaw = 0, vpitch = 0, zoom = 1, calmUntil = 0;
+    var vyaw = 0, vpitch = 0, zoom = 1, calmUntil = 0, selected = -1;
     var dragging = false, moved = 0, lastX = 0, lastY = 0, mx = -1, my = -1, hover = -1;
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var theme = {}, themeTick = 0;
@@ -2297,9 +2364,9 @@
       dragging = false;
       vyaw = vpitch = 0;             // no inertia glide — release means stop
       calmUntil = Date.now() + 2000; // hold still for 2 s before the idle spin resumes
-      if (moved < 6 && hover !== -1 && nodes[hover].count > 0) {
-        state.skillFilter = nodes[hover].name;
-        location.hash = '#/people';
+      if (moved < 6 && hover !== -1) {
+        selected = hover;
+        selectSkillPanel(nodes[hover].name);
       }
     });
     canvas.addEventListener('pointerleave', function () { mx = my = -1; });
@@ -2325,14 +2392,16 @@
         preRot(spin + vyaw, 1); preRot(vpitch, 0);
         vyaw *= 0.95; vpitch *= 0.95;
       }
-      var scale = Math.min(W, H) * 0.34 * zoom, camd = 3.2;
+      // the maze owns the left ~2/3; the side panel lives in the right third
+      var cx = W * 0.34;
+      var scale = Math.min(W * 0.62, H) * 0.34 * zoom, camd = 3.2;
       for (var i = 0; i < nodes.length; i++) {
         var n = nodes[i];
         var x1 = R[0] * n.x + R[1] * n.y + R[2] * n.z;
         var y2 = R[3] * n.x + R[4] * n.y + R[5] * n.z;
         var z2 = R[6] * n.x + R[7] * n.y + R[8] * n.z;
         var f = camd / (camd - z2);
-        proj[i] = { x: W / 2 + x1 * scale * f, y: H / 2 + y2 * scale * f, f: f, z: z2 };
+        proj[i] = { x: cx + x1 * scale * f, y: H / 2 + y2 * scale * f, f: f, z: z2 };
       }
       // hover pick (nearest projected node)
       hover = -1;
@@ -2344,7 +2413,7 @@
           if (dd < pr * pr && dd < best) { best = dd; hover = h; }
         }
       }
-      canvas.style.cursor = dragging ? 'grabbing' : (hover !== -1 && nodes[hover].count > 0 ? 'pointer' : 'grab');
+      canvas.style.cursor = dragging ? 'grabbing' : (hover !== -1 ? 'pointer' : 'grab');
 
       edges.forEach(function (e) {
         var A = proj[e.a], B = proj[e.b];
@@ -2366,8 +2435,9 @@
         ctx.globalAlpha = Math.min(1, depth + (hover === i3 ? 0.4 : 0));
         ctx.fillStyle = real ? theme.accent : theme.faint;
         ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
-        if (hover === i3) {
-          ctx.strokeStyle = theme.accent; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
+        if (hover === i3 || selected === i3) {
+          ctx.strokeStyle = theme.accent; ctx.lineWidth = 2;
+          ctx.globalAlpha = selected === i3 ? 1 : 0.9;
           ctx.beginPath(); ctx.arc(p.x, p.y, r + 4, 0, Math.PI * 2); ctx.stroke();
         }
         // real skills carry their tag count inside the node
