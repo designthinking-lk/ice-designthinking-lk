@@ -812,6 +812,17 @@ table.admin th, table.admin td { text-align: left; padding: 10px 14px; border-bo
 table.admin th { background: var(--bg-subtle); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
 table.admin tr:last-child td { border-bottom: none; }
 
+/* ---- admin People table ---- */
+/* Uniform row height: rows with a second email line (workEmail) and pending
+   invite rows (one line) must not render at different heights. */
+table.admin.people tbody td { height: 66px; padding-top: 6px; padding-bottom: 6px; vertical-align: middle; box-sizing: border-box; }
+/* Loading buttons (Resend, composer Send) must not change width — the label
+   keeps its space and the spinner overlays it, so nothing jumps. */
+table.admin.people .btn, .invite-card .btn { position: relative; }
+table.admin.people .btn.loading .label, .invite-card .btn.loading .label { visibility: hidden; opacity: 1; }
+/* margin-centred (not translate) — the rot animation owns `transform` */
+table.admin.people .btn.loading .spin, .invite-card .btn.loading .spin { position: absolute; left: 50%; top: 50%; margin: -9px 0 0 -9px; }
+
 /* ---- admin invites (People tab) ---- */
 .invite-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .invite-card { margin-bottom: 18px; }

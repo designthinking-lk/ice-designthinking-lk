@@ -2740,7 +2740,7 @@
         '<button class="btn btn-ghost btn-sm" data-action="invite-resend" data-id="' + esc(i.id) + '" data-email="' + esc(i.email) + '" title="Resend the invitation email"><span class="label"><i class="fa-regular fa-paper-plane"></i> Resend</span><span class="spin"></span></button></td>' +
         '<td><button class="btn btn-ghost btn-sm" data-action="invite-revoke" data-id="' + esc(i.id) + '" data-email="' + esc(i.email) + '" title="Revoke invitation"><i class="fa-regular fa-trash-can"></i></button></td></tr>';
     }).join('');
-    return head + '<div class="table-wrap"><table class="admin"><thead><tr><th>Name</th><th>Email</th><th>Affiliation</th><th>Roles</th><th>Onboarding</th><th></th></tr></thead>' +
+    return head + '<div class="table-wrap"><table class="admin people"><thead><tr><th>Name</th><th>Email</th><th>Affiliation</th><th>Roles</th><th>Onboarding</th><th></th></tr></thead>' +
       '<tbody>' + rows + invRows + '</tbody></table></div>';
   }
 
