@@ -376,6 +376,11 @@ a.card { color: inherit; display: block; }
 .role-addopt { border-style: solid; text-transform: uppercase; }
 .role-addopt:hover { color: var(--color-accent); border-color: var(--color-accent); }
 
+/* in-flight role change: spinner on the pending chip, everything else frozen */
+.role-tag.busy { opacity: 0.7; }
+.role-tag .chip-spin { font-size: 10px; margin-left: 2px; }
+.role-cell button:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
 /* the minted @designthinking.lk address, under the personal email */
 .dt-mail { color: var(--text-muted); font-size: 12px; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
 

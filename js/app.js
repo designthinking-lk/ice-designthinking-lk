@@ -2584,29 +2584,44 @@
 
   // Which user's "+ add role" options are expanded in the admin People table.
   var roleMenuFor = null;
+  // In-flight add/remove: {userId, role, op}. The pending chip shows a
+  // spinner and EVERY role control in the table freezes until the request
+  // (and the follow-up data refresh) completes — no double-fires, no stale
+  // clicks on other rows.
+  var roleBusy = null;
 
   // One removable chip per role. Your own admin chip has no × — an admin can
   // never strip themselves of admin (the backend refuses too).
   function roleChipsHtml(u) {
     var isSelf = !!(me() && me().id === u.id);
     var roles = rolesOf(u);
+    var busyHere = roleBusy && roleBusy.userId === u.id ? roleBusy : null;
+    var lock = !!roleBusy;
     var html = roles.map(function (r) {
-      var removable = !(r === 'admin' && isSelf);
-      return '<span class="role-tag ' + r + '">' + r +
-        (removable
-          ? '<button type="button" class="chip-x" data-action="role-remove" data-id="' + esc(u.id) + '" data-role="' + r + '" title="Remove ' + r + ' role"><i class="fa-solid fa-xmark"></i></button>'
-          : '') +
+      var spinning = busyHere && busyHere.op === 'remove' && busyHere.role === r;
+      var removable = !spinning && !(r === 'admin' && isSelf);
+      return '<span class="role-tag ' + r + (spinning ? ' busy' : '') + '">' + r +
+        (spinning
+          ? '<i class="fa-solid fa-spinner fa-spin chip-spin"></i>'
+          : removable
+            ? '<button type="button" class="chip-x" data-action="role-remove" data-id="' + esc(u.id) + '" data-role="' + r + '"' + (lock ? ' disabled' : '') + ' title="Remove ' + r + ' role"><i class="fa-solid fa-xmark"></i></button>'
+            : '') +
         '</span>';
     }).join('');
-    if (!roles.length) html += '<span class="role-tag none" title="No access until a role is assigned — nothing is deleted">no access</span>';
+    if (busyHere && busyHere.op === 'add' && roles.indexOf(busyHere.role) === -1) {
+      html += '<span class="role-tag ' + busyHere.role + ' busy">' + busyHere.role + '<i class="fa-solid fa-spinner fa-spin chip-spin"></i></span>';
+    }
+    if (!roles.length && !busyHere) html += '<span class="role-tag none" title="No access until a role is assigned — nothing is deleted">no access</span>';
     var addable = addableRoles(u);
-    if (addable.length) {
-      html += roleMenuFor === u.id
-        ? addable.map(function (r) {
-            return '<button type="button" class="role-addopt" data-action="role-add" data-id="' + esc(u.id) + '" data-role="' + r + '">' + r + '</button>';
-          }).join('') +
-          '<button type="button" class="role-addbtn" data-action="role-menu" data-id="' + esc(u.id) + '" title="Cancel"><i class="fa-solid fa-xmark"></i></button>'
-        : '<button type="button" class="role-addbtn" data-action="role-menu" data-id="' + esc(u.id) + '"><i class="fa-solid fa-plus"></i> add</button>';
+    if (addable.length && !busyHere) {
+      html += lock
+        ? '<button type="button" class="role-addbtn" disabled><i class="fa-solid fa-plus"></i> add</button>'
+        : roleMenuFor === u.id
+          ? addable.map(function (r) {
+              return '<button type="button" class="role-addopt" data-action="role-add" data-id="' + esc(u.id) + '" data-role="' + r + '">' + r + '</button>';
+            }).join('') +
+            '<button type="button" class="role-addbtn" data-action="role-menu" data-id="' + esc(u.id) + '" title="Cancel"><i class="fa-solid fa-xmark"></i></button>'
+          : '<button type="button" class="role-addbtn" data-action="role-menu" data-id="' + esc(u.id) + '"><i class="fa-solid fa-plus"></i> add</button>';
     }
     return '<div class="role-cell">' + html + '</div>';
   }
@@ -3072,18 +3087,23 @@
         }
         break;
       }
-      case 'role-menu': roleMenuFor = roleMenuFor === id ? null : id; route(); break;
+      case 'role-menu': if (roleBusy) break; roleMenuFor = roleMenuFor === id ? null : id; route(); break;
       case 'role-add': {
+        if (roleBusy) break;
+        roleBusy = { userId: id, role: t.getAttribute('data-role'), op: 'add' };
         roleMenuFor = null;
-        t.disabled = true;
+        route(); // instant spinner on the pending chip; all role controls freeze
         try {
-          await A.api('admin_add_role', { userId: id, role: t.getAttribute('data-role') });
+          await A.api('admin_add_role', { userId: id, role: roleBusy.role });
           toast('Role added');
-          await refresh();
-        } catch (err) { toast(err.message, true); route(); }
+          await refresh(); // spinner holds until fresh data is in
+        } catch (err) { toast(err.message, true); }
+        roleBusy = null;
+        route();
         break;
       }
       case 'role-remove': {
+        if (roleBusy) break;
         var remRole = t.getAttribute('data-role');
         var remUser = userById(id);
         var remName = remUser ? remUser.name : 'this person';
@@ -3094,12 +3114,16 @@
             'Remove role');
           if (!sure) break;
         }
-        t.disabled = true;
+        roleBusy = { userId: id, role: remRole, op: 'remove' };
+        roleMenuFor = null;
+        route(); // instant spinner on the pending chip; all role controls freeze
         try {
           await A.api('admin_remove_role', { userId: id, role: remRole });
           toast('Role removed');
-          await refresh();
-        } catch (err) { toast(err.message, true); route(); }
+          await refresh(); // spinner holds until fresh data is in
+        } catch (err) { toast(err.message, true); }
+        roleBusy = null;
+        route();
         break;
       }
       case 'pick-image': pickImage(t); break;
