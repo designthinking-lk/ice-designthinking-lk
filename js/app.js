@@ -358,6 +358,7 @@
     state.loaded = false;
     state.q = ''; state.roleFilter = 'all'; state.skillFilter = null; state.teamFilter = null;
     adminProjects = null;
+    inviteCard = null;
     renderChrome();
     route();
     refresh();
@@ -1357,6 +1358,16 @@
     return null;
   }
 
+  // The card's role is pre-assigned — by the invite for a new registration
+  // (bootstrap.invite, mirrored server-side), by the stored role chips when
+  // editing — so the badge is fixed; there is nothing to choose.
+  function cardRole(u, isNew) {
+    if (!isNew) return hasRoleU(u, 'admin') ? 'admin' : hasRoleU(u, 'mentor') ? 'mentor' : 'participant';
+    var d = state.data || {};
+    if (d.invite) return d.invite.role === 'mentor' ? 'mentor' : 'participant';
+    return d.isAdmin ? 'admin' : 'participant';
+  }
+
   function profileForm(u, isNew) {
     u = u || {};
     // split stored links into the three card fields by hostname
@@ -1374,8 +1385,9 @@
     var nameParts = String(u.name || '').trim().split(/\s+/).filter(Boolean);
     var firstName = nameParts.shift() || '';
     var lastName = nameParts.join(' ');
+    var role = cardRole(u, isNew);
 
-    return '<form class="form pf-grid" id="profileForm" data-new="' + (isNew ? '1' : '') + '">' +
+    return '<form class="form pf-grid" id="profileForm" data-new="' + (isNew ? '1' : '') + '" data-role="' + role + '">' +
 
       '<div class="pf-left">' +
       '<div class="idcard-scene"><div class="idcard" id="idcard">' +
@@ -1385,14 +1397,8 @@
       // intro video plays as the card's backdrop (everything above the footer)
       '<div class="card-video" id="cardVideo"></div>' +
       '<div class="idcard-head"><span class="idcard-brand">' + brandHtml(true) + '</span>' +
-      // role is self-selected on the card: member (participant/student) or
-      // mentor (facilitator) — admins keep their fixed organizer badge
-      (hasRoleU(u, 'admin')
-        ? '<span class="idcard-type">ORGANIZER</span>'
-        : '<span class="idcard-type idcard-type-select"><select name="roleSel" aria-label="Your role">' +
-          '<option value="participant"' + (hasRoleU(u, 'mentor') ? '' : ' selected') + '>Member</option>' +
-          '<option value="mentor"' + (hasRoleU(u, 'mentor') ? ' selected' : '') + '>Mentor</option>' +
-          '</select><i class="fa-solid fa-caret-down"></i></span>') +
+      // role badge is fixed (pre-assigned by the invite / role chips)
+      '<span class="idcard-type">' + (role === 'admin' ? 'ORGANIZER' : role === 'mentor' ? 'MENTOR' : 'MEMBER') + '</span>' +
       '</div>' +
       '<div class="idcard-main">' +
       '<div class="idcard-photo"><div class="photo-vp" id="photoVp" title="Drag to adjust · scroll to zoom">' +
@@ -1510,7 +1516,7 @@
     var last = String(fd.get('lastName') || '').trim();
     return {
       name: (first + ' ' + last).trim(),
-      role: fd.get('roleSel') || 'participant',
+      role: form.getAttribute('data-role') === 'mentor' ? 'mentor' : 'participant',
       affiliation: String(fd.get('affiliation') || '').trim(),
       expertise: String(fd.get('expertise') || '').trim(),
       bio: String(fd.get('bio') || '').trim(),
@@ -1675,7 +1681,6 @@
       linkGithub: fd.get('linkGithub') || '', linkWebsite: fd.get('linkWebsite') || '',
       linkLinkedin: fd.get('linkLinkedin') || '', video: fd.get('video') || '',
       image: fd.get('image') || '', skills: getTagValues(),
-      role: fd.get('roleSel') || 'participant',
     };
   }
   function saveRegDraft() {
@@ -1697,7 +1702,6 @@
       affiliation: d.affiliation, expertise: d.expertise, bio: d.bio, gender: d.gender,
       image: d.image, video: d.video, skills: d.skills || [],
       links: [d.linkGithub, d.linkWebsite, d.linkLinkedin].filter(Boolean),
-      role: d.role || 'participant',
     };
   }
 
@@ -1709,6 +1713,17 @@
     if (me()) { location.hash = '#/me'; return ''; }
     if (state.data && !state.data.registrationOpen) {
       return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-door-closed"></i>Registration is closed. Contact the organizers if you believe this is a mistake.</div>';
+    }
+    // Invite-only: mirror the backend's register gate with an explanation
+    // instead of a dead form. Only freshly loaded data decides — a cached
+    // pre-invite bootstrap lacks the invite field.
+    if (state.loaded && state.data && !state.data.invite && !state.data.isAdmin) {
+      return '<div class="empty" style="margin-top:40px"><i class="fa-regular fa-envelope"></i>' +
+        esc(eventName()) + ' is invite-only.' +
+        (state.data.email
+          ? '<br>You are signed in as <b>' + esc(state.data.email) + '</b>. If your invitation went to a different address, sign out and use that Google account — otherwise ask the organizers to invite you.'
+          : '<br>Ask the organizers for an invitation, then sign in with the invited Google account.') +
+        '</div>';
     }
     if (!formReady()) return profileScaffold('', '', formLoading());
     setTimeout(afterProfileForm, 0);
@@ -2626,9 +2641,79 @@
     return '<div class="role-cell">' + html + '</div>';
   }
 
+  // ---- invite composer (inline card above the People table) ----
+  // The invites tab is the registration allowlist: only invited emails can
+  // register, with the role fixed at invite time. null = composer closed;
+  // open: { role: 'participant'|'mentor', chips: [emails] }.
+  var inviteCard = null;
+  var INVITE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function inviteCardHtml() {
+    var c = inviteCard;
+    var n = c.chips.length;
+    var chips = c.chips.map(function (em, i) {
+      return '<span class="chip static echip">' + esc(em) +
+        '<button type="button" class="chip-x" data-action="invite-chip-x" data-idx="' + i + '" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>';
+    }).join('');
+    return '<div class="panel invite-card">' +
+      '<h3><i class="fa-regular fa-paper-plane"></i>Invite ' + (c.role === 'mentor' ? 'mentors' : 'participants') + '</h3>' +
+      '<div class="tag-input invite-input" data-action="invite-focus">' + chips +
+      '<input id="inviteEntry" type="text" autocomplete="off" spellcheck="false" value="' + esc(c.text || '') + '" placeholder="' + (n ? 'Add another…' : 'Type or paste email addresses…') + '">' +
+      '</div>' +
+      '<p class="invite-hint">Each address gets an invitation email to sign in and complete registration as a ' + c.role + '. Only invited addresses can register.</p>' +
+      '<div class="form-actions" style="margin-top:14px">' +
+      '<button class="btn btn-gradient btn-sm" data-action="invite-send"' + (n ? '' : ' disabled') + '><span class="label"><i class="fa-regular fa-paper-plane"></i> Send ' + (n ? n + ' ' : '') + 'invitation' + (n === 1 ? '' : 's') + '</span><span class="spin"></span></button>' +
+      '<button class="btn btn-ghost btn-sm" data-action="invite-cancel">Cancel</button>' +
+      '</div></div>';
+  }
+
+  // Free text → chips (valid, deduped, lowercased); invalid tokens are handed
+  // back so they can stay in the input, marked red.
+  function inviteAbsorb(text) {
+    var bad = [];
+    String(text || '').split(/[\s,;]+/).forEach(function (tk) {
+      tk = tk.trim().toLowerCase();
+      if (!tk) return;
+      if (!INVITE_EMAIL_RE.test(tk)) { if (bad.indexOf(tk) === -1) bad.push(tk); return; }
+      if (inviteCard.chips.indexOf(tk) === -1) inviteCard.chips.push(tk);
+    });
+    return bad;
+  }
+
+  // Re-render only the composer — a full route() would drop the input focus.
+  // `leftover` = invalid tokens that stay in the input, marked red. The text
+  // also lives in inviteCard.text so the periodic refresh() re-render (which
+  // rebuilds the whole view) can't wipe a half-typed address.
+  function renderInviteCard(leftover) {
+    if (!inviteCard) return;
+    inviteCard.text = leftover || '';
+    var el = document.querySelector('.invite-card');
+    if (!el) return;
+    var tmp = document.createElement('div');
+    tmp.innerHTML = inviteCardHtml();
+    el.replaceWith(tmp.firstElementChild);
+    var input = $('#inviteEntry');
+    if (input) {
+      if (leftover) input.classList.add('bad');
+      input.focus();
+    }
+  }
+
   function adminPeopleSection(d) {
     var users = (d.users || []).slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
-    if (!users.length) return '<div class="empty"><i class="fa-solid fa-users"></i>Nobody has registered yet.</div>';
+    var regEmails = {};
+    users.forEach(function (u) { if (u.email) regEmails[String(u.email).toLowerCase()] = true; });
+    // Allowlist rows nobody has registered against yet → pending rows.
+    var pending = (d.invites || [])
+      .filter(function (i) { return !regEmails[String(i.email).toLowerCase()]; })
+      .sort(function (a, b) { return (a.email || '').localeCompare(b.email || ''); });
+    var head = '<div class="invite-bar">' +
+      '<button class="btn btn-outline btn-sm" data-action="invite-open" data-role="participant"><i class="fa-solid fa-user-plus"></i>Invite participants</button>' +
+      '<button class="btn btn-outline btn-sm" data-action="invite-open" data-role="mentor"><i class="fa-solid fa-user-tie"></i>Invite mentors</button>' +
+      '</div>' + (inviteCard ? inviteCardHtml() : '');
+    if (!users.length && !pending.length) {
+      return head + '<div class="empty"><i class="fa-solid fa-users"></i>Nobody has registered yet.</div>';
+    }
     var rows = users.map(function (u) {
       return '<tr><td style="display:flex;align-items:center;gap:10px">' + avatar(u, 'avatar-sm') +
         '<a href="#/profile/' + esc(u.id) + '">' + esc(u.name) + '</a></td>' +
@@ -2637,10 +2722,22 @@
         '</td>' +
         '<td>' + esc(u.affiliation || '') + '</td>' +
         '<td>' + roleChipsHtml(u) + '</td>' +
+        '<td><span class="ob-tag registered"><i class="fa-solid fa-circle-check"></i>Registered</span></td>' +
         '<td><button class="btn btn-ghost btn-sm" data-action="del-user" data-id="' + esc(u.id) + '" data-name="' + esc(u.name) + '"><i class="fa-regular fa-trash-can"></i></button></td></tr>';
     }).join('');
-    return '<div class="table-wrap"><table class="admin"><thead><tr><th>Name</th><th>Email</th><th>Affiliation</th><th>Roles</th><th></th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table></div>';
+    var invRows = pending.map(function (i) {
+      var roleTag = i.role === 'mentor' ? 'mentor' : 'participant';
+      return '<tr class="invite-row"><td style="display:flex;align-items:center;gap:10px">' +
+        '<span class="avatar avatar-sm invite-avatar"><i class="fa-regular fa-envelope"></i></span><span class="invite-noname">—</span></td>' +
+        '<td>' + esc(i.email) + '</td>' +
+        '<td></td>' +
+        '<td><div class="role-cell"><span class="role-tag ' + roleTag + '">' + roleTag + '</span></div></td>' +
+        '<td><span class="ob-tag invited"><i class="fa-regular fa-clock"></i>Invited</span>' +
+        '<button class="btn btn-ghost btn-sm" data-action="invite-resend" data-id="' + esc(i.id) + '" data-email="' + esc(i.email) + '" title="Resend the invitation email"><span class="label"><i class="fa-regular fa-paper-plane"></i> Resend</span><span class="spin"></span></button></td>' +
+        '<td><button class="btn btn-ghost btn-sm" data-action="invite-revoke" data-id="' + esc(i.id) + '" data-email="' + esc(i.email) + '" title="Revoke invitation"><i class="fa-regular fa-trash-can"></i></button></td></tr>';
+    }).join('');
+    return head + '<div class="table-wrap"><table class="admin"><thead><tr><th>Name</th><th>Email</th><th>Affiliation</th><th>Roles</th><th>Onboarding</th><th></th></tr></thead>' +
+      '<tbody>' + rows + invRows + '</tbody></table></div>';
   }
 
   function adminEventSection(d) {
@@ -2928,8 +3025,8 @@
       skills: getTagValues(),
       links: links,
       video: video,
-      // undefined (dropped from JSON) when the card shows the fixed admin badge
-      role: fd.get('roleSel') || undefined,
+      // no role: it's pre-assigned by the invite (register) and admin-managed
+      // via the role chips (update_profile ignores it anyway)
     };
   }
 
@@ -3087,6 +3184,64 @@
         }
         break;
       }
+      case 'invite-open': {
+        inviteCard = { role: t.getAttribute('data-role') === 'mentor' ? 'mentor' : 'participant', chips: [] };
+        route();
+        var invEntry0 = $('#inviteEntry');
+        if (invEntry0) invEntry0.focus();
+        break;
+      }
+      case 'invite-cancel': inviteCard = null; route(); break;
+      case 'invite-focus': { var invFoc = $('#inviteEntry'); if (invFoc) invFoc.focus(); break; }
+      case 'invite-chip-x': {
+        if (!inviteCard) break;
+        inviteCard.chips.splice(Number(t.getAttribute('data-idx')), 1);
+        renderInviteCard();
+        break;
+      }
+      case 'invite-send': {
+        if (!inviteCard) break;
+        // absorb whatever is still sitting uncommitted in the input
+        var invEntry = $('#inviteEntry');
+        if (invEntry && invEntry.value.trim()) {
+          var invLeft = inviteAbsorb(invEntry.value);
+          if (invLeft.length) {
+            renderInviteCard(invLeft.join(' '));
+            toast('Not a valid email: ' + invLeft.join(', '), true);
+            break;
+          }
+        }
+        if (!inviteCard.chips.length) { renderInviteCard(); break; }
+        busy(t, true);
+        try {
+          var invRes = await A.api('admin_invite', { emails: inviteCard.chips, role: inviteCard.role });
+          var invMsg = [];
+          if (invRes.sent.length) invMsg.push(invRes.sent.length + ' invitation' + (invRes.sent.length === 1 ? '' : 's') + ' sent');
+          if (invRes.alreadyRegistered.length) invMsg.push('already registered: ' + invRes.alreadyRegistered.join(', '));
+          if (invRes.failed.length) invMsg.push('email failed: ' + invRes.failed.join(', '));
+          inviteCard = null;
+          await refresh();
+          toast(invMsg.join(' · ') || 'Nothing to send', invRes.failed.length > 0);
+        } catch (err) { toast(err.message, true); busy(t, false); }
+        break;
+      }
+      case 'invite-resend': {
+        busy(t, true);
+        try {
+          await A.api('admin_resend_invite', { inviteId: id });
+          toast('Invitation re-sent to ' + t.getAttribute('data-email'));
+        } catch (err) { toast(err.message, true); }
+        busy(t, false);
+        break;
+      }
+      case 'invite-revoke': {
+        var invEmail = t.getAttribute('data-email');
+        if (await confirmModal('Revoke invitation?', invEmail + ' will no longer be able to register.', 'Revoke')) {
+          try { await A.api('admin_revoke_invite', { inviteId: id }); toast('Invitation revoked'); refresh(); }
+          catch (err) { toast(err.message, true); }
+        }
+        break;
+      }
       case 'role-menu': if (roleBusy) break; roleMenuFor = roleMenuFor === id ? null : id; route(); break;
       case 'role-add': {
         if (roleBusy) break;
@@ -3239,6 +3394,41 @@
         if (location.hash === '#/admin') route(); // revert the control
       }
     }
+  });
+
+  // Invite composer chip entry — delegated so composer re-renders keep working.
+  // Enter/comma/semicolon/space commits the token; Backspace on an empty input
+  // removes the last chip.
+  document.addEventListener('keydown', function (e) {
+    var input = e.target;
+    if (!inviteCard || !input || input.id !== 'inviteEntry') return;
+    if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === ' ') {
+      e.preventDefault();
+      if (!input.value.trim()) return;
+      var bad = inviteAbsorb(input.value);
+      renderInviteCard(bad.join(' '));
+      if (bad.length) toast('Not a valid email: ' + bad.join(', '), true);
+    } else if (e.key === 'Backspace' && !input.value && inviteCard.chips.length) {
+      inviteCard.chips.pop();
+      renderInviteCard();
+    } else {
+      input.classList.remove('bad');
+    }
+  });
+
+  document.addEventListener('paste', function (e) {
+    var input = e.target;
+    if (!inviteCard || !input || input.id !== 'inviteEntry') return;
+    e.preventDefault();
+    var text = (e.clipboardData || window.clipboardData).getData('text');
+    var bad = inviteAbsorb(input.value + ' ' + text);
+    renderInviteCard(bad.join(' '));
+    if (bad.length) toast('Not a valid email: ' + bad.join(', '), true);
+  });
+
+  // Keep the half-typed address in state — see renderInviteCard.
+  document.addEventListener('input', function (e) {
+    if (inviteCard && e.target && e.target.id === 'inviteEntry') inviteCard.text = e.target.value;
   });
 
   document.addEventListener('submit', async function (e) {
