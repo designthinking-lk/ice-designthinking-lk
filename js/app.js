@@ -547,12 +547,24 @@
 
   // Landing (#/): chrome only, empty middle apart from the feature video from
   // the last workshop — fades in after a beat, edges masked into the page.
+  // Lower-left: the whole pitch in one glance (tagline, last workshop's
+  // numbers, a door into #/about) — sits in the video mask's bottom fade.
   function viewLanding() {
     return '<div class="landing">' +
       '<div class="feature-video">' +
       '<iframe src="https://www.youtube.com/embed/x8rehfnwRv4?start=12&autoplay=1&mute=1&rel=0&controls=0&iv_load_policy=3&playsinline=1&loop=1&playlist=x8rehfnwRv4&enablejsapi=1" ' +
       'title="ICE workshop highlights" frameborder="0" ' +
       'allow="autoplay; encrypted-media" tabindex="-1"></iframe>' +
+      '</div>' +
+      '<div class="landing-intro">' +
+      '<div class="li-kicker">Innovation &middot; Creativity &middot; Entrepreneurship</div>' +
+      '<div class="li-stats">' +
+      '<span class="stat"><b>30</b><span>participants</span></span>' +
+      '<span class="stat"><b>6</b><span>universities</span></span>' +
+      '<span class="stat"><b>14</b><span>facilitators</span></span>' +
+      '<span class="stat"><b>40</b><span>hours in 3 days</span></span>' +
+      '</div>' +
+      '<a class="li-more" href="#/about">About the program <i class="fa-solid fa-arrow-right"></i></a>' +
       '</div></div>';
   }
 
@@ -1941,11 +1953,118 @@
     return '<div class="empty" style="margin-top:40px"><i class="fa-solid fa-toolbox"></i>Tools are coming soon.<br>Handy links and resources for the workshop will live here.</div>';
   }
 
+  // --------------------------------------------------------------- about
+  // Public program page (#/about) — the brochure distilled: why, journey,
+  // curriculum, who designed it, voices, where alumni ended up. Static.
+  var AB_ALUMNI = [
+    { img: 'aranya', name: 'Aranya Thanabalasingam', role: 'IBM Singapore' },
+    { img: 'mukunthan', name: 'Tharmakulasingam Mukunthan', role: 'LSEG, Sri Lanka' },
+    { img: 'rishadhy', name: 'Rishadhy Mjm', role: 'Atlas Labs' },
+    { img: 'nivarthana-sandeepani', name: 'Nivarthana Sandeepani', role: 'Software Engineer, TIQRI' },
+    { img: 'ishan-kawinda', name: 'Ishan Kawinda', role: 'Founder, Pengui' },
+    { img: 'uvindu-dias', name: 'Uvindu Bigumjith Dias', role: 'Graduate Student, University of Canberra' },
+  ];
+
+  var AB_JOURNEY = [
+    ['3-day bootcamp', 'Active, hands-on learning across disciplines — problem formulation, teamwork, creative ideation and prototyping with AI. Teams take an idea through the full cycle to innovation.'],
+    ['Showcase event', 'A networking evening where teams present their outcomes to policy makers and industry leaders.'],
+    ['Follow-up', 'High-potential teams continue into incubation — soft-skills development, career guidance and mentoring towards commercialisation, with accelerator partners. Every participant joins a private alumni network 150+ strong.'],
+  ];
+
+  var AB_CURRICULUM = [
+    ['Discover', 'Challenging assumptions, knowledge and attitude'],
+    ['Define', 'Reframing &amp; scoping a problem statement'],
+    ['Develop', 'Ideation techniques'],
+    ['Deliver', 'Prototyping — what do prototypes prototype'],
+    ['AI', 'Overview of AI &middot; getting started with open LLMs &middot; agentic frameworks &middot; prototyping with AI'],
+    ['Venture', 'Pivoting &middot; Lean Canvas &amp; lean start-up &middot; digital tools &middot; effective communication'],
+  ];
+
+  var AB_QUOTES = [
+    { img: 'sunil-amarasuriya', name: 'Sunil Amarasuriya', role: 'Chairman, BP de Silva Group',
+      text: 'It’s never too early to start thinking differently. I believe that everyone should take this opportunity to think how best they can use these methods to plan out their lives for the future.' },
+    { img: 'uvindu-dias', name: 'Uvindu Bigumjith Dias', role: 'Workshop participant',
+      text: 'Even a little change in the conventional minds of individuals in Sri Lanka would ultimately add up to build a better nation. I consider this workshop nothing but a treasure.' },
+  ];
+
+  function viewAbout() {
+    return '<div class="about">' +
+      '<header class="ab-hero">' +
+      '<div class="hero-kicker">Innovation &middot; Creativity &middot; Entrepreneurship</div>' +
+      '<h1>A step towards an <span class="grad">innovation ecosystem</span> in Sri&nbsp;Lanka</h1>' +
+      '<p>ICE — the Design Innovation program — empowers Sri Lankan youth with creativity, innovation and entrepreneurship skills. A hands-on immersion in design thinking and Generative AI, built on the belief that a change in how young people think ripples into how a whole country builds.</p>' +
+      '</header>' +
+
+      '<div class="ab-stats">' +
+      '<div class="stat"><b>30</b><span>participants</span></div>' +
+      '<div class="stat"><b>6</b><span>universities</span></div>' +
+      '<div class="stat"><b>14</b><span>facilitators</span></div>' +
+      '<div class="stat"><b>40</b><span>hours in 3 days</span></div>' +
+      '<span class="ab-stats-note">Design Innovation 2025</span>' +
+      '</div>' +
+
+      '<section class="ab-section">' +
+      '<h2>The journey</h2>' +
+      '<div class="ab-journey">' +
+      AB_JOURNEY.map(function (s, i) {
+        return '<div class="ab-step"><span class="ab-step-n">' + (i + 1) + '</span>' +
+          '<h3>' + s[0] + '</h3><p>' + s[1] + '</p></div>';
+      }).join('') +
+      '</div></section>' +
+
+      '<section class="ab-section">' +
+      '<h2>What you’ll learn</h2>' +
+      '<p class="ab-sub">Identify, practice and apply the key elements of AI, design thinking and entrepreneurship — for a lifelong journey, not just three days.</p>' +
+      '<div class="ab-curriculum">' +
+      AB_CURRICULUM.map(function (c) {
+        return '<div class="ab-cur"><h3>' + c[0] + '</h3><p>' + c[1] + '</p></div>';
+      }).join('') +
+      '</div></section>' +
+
+      '<section class="ab-section">' +
+      '<h2>Designed by Prof. Suranga Nanayakkara</h2>' +
+      '<div class="ab-designer">' +
+      '<img class="ab-portrait" src="assets/about/suranga.jpg" alt="Prof. Suranga Nanayakkara">' +
+      '<p>Suranga has over 15 years of experience developing and teaching AI &amp; design thinking courses. He is an Associate Professor at the National University of Singapore, Honorary Professor at the University of Auckland, and was previously a Postdoctoral Associate at the MIT Media Lab. His work has been recognised with MIT TechReview’s TR35 award (Asia Pacific) and JCI Sri Lanka’s Ten Outstanding Young Professionals. ' +
+      '<a href="https://suranga.info" target="_blank" rel="noopener">suranga.info <i class="fa-solid fa-arrow-up-right-from-square"></i></a></p>' +
+      '</div></section>' +
+
+      '<section class="ab-section">' +
+      '<h2>Voices</h2>' +
+      '<div class="ab-quotes">' +
+      AB_QUOTES.map(function (q) {
+        return '<figure class="ab-quote"><blockquote>&ldquo;' + q.text + '&rdquo;</blockquote>' +
+          '<figcaption><img src="assets/about/' + q.img + '.jpg" alt="">' +
+          '<span><b>' + q.name + '</b>' + q.role + '</span></figcaption></figure>';
+      }).join('') +
+      '</div></section>' +
+
+      '<section class="ab-section">' +
+      '<h2>Where alumni are now</h2>' +
+      '<p class="ab-sub">Participants from workshops 2016&ndash;2025.</p>' +
+      '<div class="ab-alumni">' +
+      AB_ALUMNI.map(function (a) {
+        return '<div class="ab-alum"><img src="assets/about/' + a.img + '.jpg" alt="">' +
+          '<b>' + a.name + '</b><span>' + a.role + '</span></div>';
+      }).join('') +
+      '</div></section>' +
+
+      '<section class="ab-section ab-outro">' +
+      '<p>See what the 2025 teams built in three days — from assistive tech for blind students to AI language immersion — on the <a href="#/projects">Projects page</a>.</p>' +
+      '<p class="ab-links">ICE is run by DT@SL — Ideas to Innovations &nbsp;' +
+      '<a href="https://designthinking.lk" target="_blank" rel="noopener">designthinking.lk</a> &middot; ' +
+      '<a href="https://www.facebook.com/DesigninnovationsSL" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i> Facebook</a></p>' +
+      '</section>' +
+      '</div>';
+  }
+
   // ------------------------------------------------------------- program
-  // View-only 3-day agenda: columns are workshop days, rows 8:00 → 18:00.
-  // Renders a skeleton immediately; initProgram() swaps in real events from
-  // the backend's Google Calendar pull once it's configured.
-  var PG_START = 8, PG_END = 18, PG_HOUR_PX = 48; // compact: all slots fit unscrolled
+  // View-only 3-day agenda. Each day is a fixed-height flex column: cards
+  // grow with their duration but never shrink below a readable minimum, and
+  // flexbox renormalizes so every column fills the same height — dense
+  // schedules with 5-minute items stay overlap-free without scrolling.
+  // Parallel events sit side-by-side; idle gaps render as slim separators.
+  // Renders a skeleton immediately; initProgram() swaps in calendar events.
 
   function programDayLabels() {
     var p = proj();
@@ -1963,30 +2082,23 @@
     return labels;
   }
 
-  // placeholder blocks (start hour, duration h) per day — replaced by live data
+  // placeholder rows (flex-grow weights) per day — replaced by live data
   var PG_SKELETON = [
-    [[8.5, 1.5], [10.5, 1.5], [13, 2], [15.5, 1.5]],
-    [[9, 1.5], [11, 1.5], [13.5, 2.5], [16.5, 1]],
-    [[8.5, 1], [10, 2], [13, 1.5], [15, 2.5]],
+    [60, 30, 40, 90, 60, 45, 60, 90, 30],
+    [35, 40, 100, 60, 60, 120, 30, 60],
+    [45, 45, 75, 60, 120, 30, 60, 45, 90],
   ];
 
   function viewProgram() {
-    var hours = '';
-    for (var h = PG_START; h <= PG_END; h++) {
-      hours += '<span class="pg-time" style="top:' + ((h - PG_START) * PG_HOUR_PX + 46) + 'px">' +
-        ((h % 12) || 12) + (h < 12 ? ' AM' : ' PM') + '</span>';
-    }
     var labels = programDayLabels();
     var cols = labels.map(function (label, di) {
-      var blocks = PG_SKELETON[di].map(function (b) {
-        return '<div class="pg-event pg-skeleton" style="top:' + ((b[0] - PG_START) * PG_HOUR_PX) + 'px;height:' +
-          (b[1] * PG_HOUR_PX - 6) + 'px"></div>';
+      var blocks = PG_SKELETON[di].map(function (g) {
+        return '<div class="pg-event pg-skeleton" style="flex-grow:' + g + '"></div>';
       }).join('');
       return '<div class="pg-day"><div class="pg-day-head">' + esc(label) + '</div>' +
         '<div class="pg-day-body" data-di="' + di + '">' + blocks + '</div></div>';
     }).join('');
-    return '<div class="program-wrap"><div class="program-grid">' +
-      '<div class="pg-times">' + hours + '</div>' + cols + '</div></div>';
+    return '<div class="program-wrap"><div class="program-grid">' + cols + '</div></div>';
   }
 
   function initProgram() {
@@ -2015,22 +2127,37 @@
         var h = +hhmm.slice(0, 2), m = hhmm.slice(3, 5);
         return ((h % 12) || 12) + ':' + m + (h < 12 ? ' AM' : ' PM');
       }
+      function toMin(t) { return +t.slice(11, 13) * 60 + +t.slice(14, 16); }
+      function card(ev, grow) {
+        return '<div class="pg-event pg-real"' + (grow ? ' style="flex-grow:' + grow + '"' : '') + '>' +
+          '<div class="pg-ev-title">' + esc(ev.title) + '</div>' +
+          '<div class="pg-ev-meta">' + ampm(ev.startLocal.slice(11, 16)) +
+          (ev.location ? ' · ' + esc(ev.location) : '') + '</div></div>';
+      }
       $all('.pg-day-body').forEach(function (body) {
         var di = Number(body.getAttribute('data-di'));
+        var evs = r.events.filter(function (ev) {
+          return !ev.allDay && ev.startLocal && ev.startLocal.slice(0, 10) === dayKeys[di];
+        }).sort(function (a, b) { return toMin(a.startLocal) - toMin(b.startLocal); });
+        // cluster truly-overlapping events; they render side-by-side
+        var groups = [];
+        evs.forEach(function (ev) {
+          var s = toMin(ev.startLocal), e = Math.max(s + 5, toMin(ev.endLocal));
+          var g = groups[groups.length - 1];
+          if (g && s < g.end) { g.items.push(ev); g.end = Math.max(g.end, e); }
+          else groups.push({ start: s, end: e, items: [ev] });
+        });
         var html = '';
-        r.events.forEach(function (ev) {
-          if (ev.allDay || !ev.startLocal) return;
-          if (ev.startLocal.slice(0, 10) !== dayKeys[di]) return;
-          var sh = +ev.startLocal.slice(11, 13) + ev.startLocal.slice(14, 16) / 60;
-          var eh = +ev.endLocal.slice(11, 13) + ev.endLocal.slice(14, 16) / 60;
-          if (ev.endLocal.slice(0, 10) !== dayKeys[di]) eh = PG_END; // spills past midnight
-          sh = Math.max(PG_START, sh); eh = Math.min(PG_END, eh);
-          if (eh <= sh) return;
-          html += '<div class="pg-event pg-real" style="top:' + ((sh - PG_START) * PG_HOUR_PX) + 'px;height:' +
-            ((eh - sh) * PG_HOUR_PX - 6) + 'px">' +
-            '<div class="pg-ev-title">' + esc(ev.title) + '</div>' +
-            '<div class="pg-ev-meta">' + ampm(ev.startLocal.slice(11, 16)) +
-            (ev.location ? ' · ' + esc(ev.location) : '') + '</div></div>';
+        groups.forEach(function (g, gi) {
+          var span = g.end - g.start;
+          if (g.items.length === 1) html += card(g.items[0], span);
+          else {
+            html += '<div class="pg-group" style="flex-grow:' + span + '">' +
+              g.items.map(function (ev) { return card(ev, 0); }).join('') + '</div>';
+          }
+          // idle stretches (≥ 30 min) show as a slim dashed separator
+          var next = groups[gi + 1];
+          if (next && next.start - g.end >= 30) html += '<div class="pg-gap"></div>';
         });
         body.innerHTML = html; // configured: empty days go clean, not skeleton
       });
@@ -2403,6 +2530,7 @@
     { re: /^#\/skills$/, view: viewSkills },
     { re: /^#\/program$/, view: viewProgram },
     { re: /^#\/tools$/, view: viewTools },
+    { re: /^#\/about$/, view: viewAbout },
     { re: /^#\/announcements$/, view: viewAnnouncements },
     { re: /^#\/register$/, view: viewRegister },
     { re: /^#\/me$/, view: viewMe },

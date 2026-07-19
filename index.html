@@ -22,10 +22,12 @@
         crossorigin="anonymous" referrerpolicy="no-referrer">
 
   <!-- bump ?v= on any asset change: GitHub Pages caches for 10 min -->
-  <link rel="stylesheet" href="css/theme.css?v=43">
-  <link rel="stylesheet" href="css/app.css?v=43">
+  <link rel="stylesheet" href="css/theme.css?v=45">
+  <link rel="stylesheet" href="css/app.css?v=45">
   <!-- apply the saved theme before first paint so night mode never flashes -->
   <script>try{if(localStorage.getItem('ice.theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
+  <!-- desktop-first: phones get the "open on desktop" gate (markup below, styles in app.css) -->
+  <script>if(/Mobi|Opera Mini/i.test(navigator.userAgent))document.documentElement.classList.add('is-mobile');</script>
 </head>
 <body>
   <!-- rounded-corner octagon clip — scales with any element (objectBoundingBox) -->
@@ -36,6 +38,16 @@
       </clipPath>
     </defs>
   </svg>
+
+  <!-- mobile gate — shown instead of the app when the head UA sniff tags
+       <html> with .is-mobile; the layout is desktop-only for now -->
+  <div class="mobile-gate" role="alert">
+    <i class="fa-solid fa-desktop" aria-hidden="true"></i>
+    <h1>Best on a bigger screen</h1>
+    <p>Our mobile experience is still being crafted. Please open this page in a desktop browser for the optimal experience.</p>
+    <span class="mg-brand">ICE &mdash; Design Thinking Workshops</span>
+  </div>
+
   <div class="shell">
     <aside class="sidebar" id="sidebar">
       <!-- decorative half octagon: same shape family as the hive tiles, its
@@ -89,8 +101,9 @@
     </aside>
   </div>
 
-  <!-- floating bottom-right cluster: program + tools + chat & broadcasts -->
+  <!-- floating bottom-right cluster: about + program + tools + chat & broadcasts -->
   <div class="fab-stack">
+    <a href="#/about" data-nav="about" id="navAbout" class="tools-fab" title="About the program"><i class="fa-regular fa-circle-question"></i><span>About</span></a>
     <a href="#/program" data-nav="program" id="navProgram" class="tools-fab" title="Program"><i class="fa-regular fa-calendar-days"></i><span>Program</span></a>
     <a href="#/tools" data-nav="tools" id="navTools" class="tools-fab" title="Tools" hidden><i class="fa-solid fa-toolbox"></i><span>Tools</span></a>
     <button type="button" class="chat-fab" id="navChatBtn" data-action="toggle-chat" title="Chat &amp; broadcasts" hidden>
@@ -104,6 +117,7 @@
     <span class="credit-logos">
       <a href="https://ahlab.org" target="_blank" rel="noopener" title="Augmented Human Lab"><img src="assets/ahlab-black.svg" alt="Augmented Human Lab"></a>
       <a href="https://nus.edu.sg" target="_blank" rel="noopener" title="National University of Singapore"><img class="nus" src="assets/nus-black.png" alt="National University of Singapore"></a>
+      <a class="credit-fb" href="https://www.facebook.com/DesigninnovationsSL" target="_blank" rel="noopener" title="Design Innovation on Facebook"><i class="fa-brands fa-facebook"></i></a>
     </span>
   </footer>
 
@@ -111,9 +125,9 @@
   <div id="modalRoot"></div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="js/config.js?v=43"></script>
-  <script src="js/api.js?v=43"></script>
-  <script src="js/chat.js?v=43"></script>
-  <script src="js/app.js?v=43"></script>
+  <script src="js/config.js?v=45"></script>
+  <script src="js/api.js?v=45"></script>
+  <script src="js/chat.js?v=45"></script>
+  <script src="js/app.js?v=45"></script>
 </body>
 </html>

@@ -234,6 +234,34 @@ button { font-family: inherit; }
    washes through, keeping the footage soft behind the UI */
 .feature-video.show { opacity: 0.8; transform: none; }
 
+/* The one-glance pitch, lower-left — inside the video mask's bottom fade so
+   it reads on near-plain page background. Fades in on its own clock (the
+   video handshake can take seconds; the words shouldn't wait for it). */
+.landing-intro {
+  position: absolute; left: 208px; bottom: 72px; z-index: 1;
+  pointer-events: none; /* only the link below re-enables clicks */
+  opacity: 0; animation: li-in 1.2s ease 0.6s forwards;
+}
+@keyframes li-in { to { opacity: 1; } }
+.landing-intro .li-kicker {
+  font-family: var(--font-display); font-weight: 800; font-size: 12.5px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent);
+}
+.landing-intro .li-stats { display: flex; gap: 30px; flex-wrap: wrap; margin-top: 14px; }
+.landing-intro .li-more {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 18px;
+  pointer-events: auto; text-decoration: none;
+  font-family: var(--font-display); font-weight: 700; font-size: 14.5px;
+  color: var(--text); transition: color 0.15s, gap 0.15s;
+}
+.landing-intro .li-more i { font-size: 12px; color: var(--text-faint); transition: color 0.15s; }
+.landing-intro .li-more:hover { color: var(--color-accent); gap: 12px; }
+.landing-intro .li-more:hover i { color: var(--color-accent); }
+@media (max-width: 860px) {
+  .landing-intro { left: 24px; right: 24px; bottom: 88px; }
+  .landing-intro .li-stats { gap: 20px; }
+}
+
 /* -------------------------------------------------------------------- hero */
 .hero { padding: 44px 0 36px; }
 .hero-kicker {
@@ -1243,37 +1271,41 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 .skills3d-wrap canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
 
 /* ----------------------------------------------------------------- program */
-/* View-only 3-day agenda grid: time rail + three day columns, 8 AM → 6 PM. */
-.program-wrap { max-width: 1080px; margin: 10px auto 40px; }
+/* View-only 3-day agenda: fixed-height flex columns. Cards grow with their
+   event's duration but keep a readable minimum; flexbox renormalizes so all
+   columns fill the same height — no overlap, no scroll, however dense. */
+.program-wrap { max-width: 1080px; margin: 6px auto 30px; }
 .program-grid { display: flex; gap: 16px; }
-.pg-times { width: 54px; flex: none; position: relative; }
-.pg-time {
-  position: absolute; right: 10px; transform: translateY(-50%);
-  font-size: 11px; font-weight: 600; color: var(--text-faint); white-space: nowrap;
-}
 .pg-day { flex: 1; min-width: 0; }
 .pg-day-head {
   text-align: center; font-weight: 700; font-size: 14px; color: var(--text);
-  padding: 12px 0 14px; white-space: nowrap;
+  padding: 8px 0 12px; white-space: nowrap;
 }
 .pg-day-body {
-  position: relative; height: 480px; /* (18 − 8) h × 48px — fits unscrolled */
-  border-top: 1px solid var(--border);
-  background: repeating-linear-gradient(to bottom,
-    transparent 0, transparent 47px, var(--border) 47px, var(--border) 48px);
+  display: flex; flex-direction: column; gap: 4px;
+  height: calc(100vh - 220px); min-height: 480px;
+  border-top: 1px solid var(--border); padding-top: 8px;
 }
 .pg-event {
-  position: absolute; left: 4px; right: 4px; border-radius: 10px;
-  padding: 7px 10px; overflow: hidden; pointer-events: none;
+  flex-grow: 1; flex-basis: 0; min-height: 24px;
+  display: flex; align-items: center; gap: 8px; /* one row: title … time */
+  border-radius: 9px; padding: 2px 10px; overflow: hidden; pointer-events: none;
 }
+.pg-event .pg-ev-meta { margin-left: auto; flex: none; }
+.pg-group { display: flex; gap: 4px; min-height: 40px; flex-basis: 0; }
+.pg-group .pg-event { flex: 1; }
+.pg-gap { flex: none; border-bottom: 1px dashed var(--border-strong); margin: 1px 16%; }
 .pg-skeleton { background: var(--bg-subtle); animation: pg-pulse 1.8s ease-in-out infinite; }
 @keyframes pg-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 .pg-real {
   background: rgba(97, 0, 255, 0.08);
   border: 1px solid rgba(97, 0, 255, 0.28);
 }
-.pg-ev-title { font-size: 12.5px; font-weight: 700; color: var(--text); line-height: 1.25; }
-.pg-ev-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.pg-ev-title {
+  font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pg-ev-meta { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 :root[data-theme="dark"] .pg-real { background: rgba(0, 215, 238, 0.1); border-color: rgba(0, 215, 238, 0.3); }
 
 /* ------------------------------------------------------------ site credit */
@@ -1294,6 +1326,8 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 .credit-logos img { height: 26px; width: auto; display: block; opacity: 0.8; transition: opacity 0.15s; }
 .credit-logos img.nus { height: 34px; }
 .credit-logos a:hover img { opacity: 1; }
+.credit-fb { display: flex; color: var(--text-faint); font-size: 19px; transition: color 0.15s; }
+.credit-fb:hover { color: var(--color-accent); }
 /* ahlab svg is black artwork; the nus png is WHITE artwork (made for dark
    backgrounds) — each inverts on the theme where it would vanish */
 .credit-logos img.nus { filter: invert(1); }
@@ -1320,3 +1354,104 @@ body.landing-bg .side-oct {
    strength or the solid panels block the video */
 :root[data-theme="dark"] body.landing-bg .sidebar,
 :root[data-theme="dark"] body.landing-bg .topbar { background: transparent; }
+
+/* ------------------------------------------------------------------- about */
+/* #/about — the program brochure distilled into one quiet scrolling page.
+   Reuses the hero + stat primitives; everything else is deliberately plain
+   type on the page background, no cards unless a border earns its keep. */
+.about { max-width: 780px; margin: 0 auto; padding: 28px 0 96px; }
+.ab-hero h1 {
+  font-size: clamp(30px, 4.6vw, 46px); letter-spacing: -0.03em;
+  line-height: 1.08; margin: 10px 0 16px;
+}
+.ab-hero h1 .grad {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.ab-hero p { max-width: 620px; color: var(--text-body); font-size: 16.5px; line-height: 1.55; }
+
+.ab-stats {
+  display: flex; align-items: flex-end; gap: 40px; flex-wrap: wrap;
+  margin-top: 36px; padding: 22px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.ab-stats-note { margin-left: auto; color: var(--text-faint); font-size: 12.5px; align-self: center; }
+
+.ab-section { margin-top: 56px; }
+.ab-section h2 {
+  font-family: var(--font-display); font-size: 21px; letter-spacing: -0.02em; margin: 0 0 14px;
+}
+.ab-sub { color: var(--text-muted); font-size: 14.5px; margin: -6px 0 18px; }
+
+/* journey — three numbered steps in a row */
+.ab-journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.ab-step-n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; clip-path: url(#octr);
+  background: var(--gradient-brand); color: #fff;
+  font-family: var(--font-display); font-weight: 700; font-size: 14px;
+}
+.ab-step h3 { font-size: 15.5px; margin: 10px 0 6px; letter-spacing: -0.01em; }
+.ab-step p { color: var(--text-body); font-size: 13.5px; line-height: 1.5; }
+
+/* curriculum — six phase blocks, accent keyword + plain list */
+.ab-curriculum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 28px; }
+.ab-cur h3 {
+  font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--color-accent); margin: 0 0 5px;
+}
+.ab-cur p { color: var(--text-body); font-size: 13.5px; line-height: 1.5; }
+
+/* designer */
+.ab-designer { display: flex; gap: 22px; align-items: flex-start; }
+.ab-portrait { width: 96px; height: 96px; object-fit: cover; flex: none; clip-path: url(#octr); }
+.ab-designer p { color: var(--text-body); font-size: 14.5px; line-height: 1.55; }
+.ab-designer a { color: var(--color-accent); text-decoration: none; font-weight: 600; white-space: nowrap; }
+.ab-designer a i { font-size: 11px; }
+
+/* voices — two pull-quotes */
+.ab-quotes { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.ab-quote { margin: 0; border-left: 3px solid var(--color-accent); padding-left: 18px; }
+.ab-quote blockquote { margin: 0; color: var(--text-body); font-size: 14.5px; line-height: 1.55; font-style: italic; }
+.ab-quote figcaption { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.ab-quote figcaption img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+.ab-quote figcaption span { display: flex; flex-direction: column; font-size: 12.5px; color: var(--text-muted); }
+.ab-quote figcaption b { font-family: var(--font-display); font-size: 13.5px; color: var(--text); }
+
+/* alumni — small octagon tiles, same shape family as the People hive */
+.ab-alumni { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 22px 24px; }
+.ab-alum { display: flex; flex-direction: column; }
+.ab-alum img { width: 78px; height: 78px; object-fit: cover; clip-path: url(#octr); }
+.ab-alum b { font-family: var(--font-display); font-size: 13.5px; letter-spacing: -0.01em; margin-top: 9px; }
+.ab-alum span { color: var(--text-muted); font-size: 12.5px; line-height: 1.35; }
+
+/* outro — pointer to live projects + org links */
+.ab-outro { border-top: 1px solid var(--border); padding-top: 24px; }
+.ab-outro p { color: var(--text-body); font-size: 14.5px; }
+.ab-outro a { color: var(--color-accent); text-decoration: none; font-weight: 600; }
+.ab-links { margin-top: 10px; color: var(--text-muted); font-size: 13px; }
+.ab-links a { font-weight: 500; }
+
+@media (max-width: 860px) {
+  .ab-journey, .ab-curriculum, .ab-quotes { grid-template-columns: 1fr; }
+  .ab-journey { gap: 22px; }
+  .ab-designer { flex-direction: column; }
+}
+
+/* ---- mobile gate ---------------------------------------------------------
+   the layout is desktop-only for now: a UA sniff in index.html's head tags
+   <html> with .is-mobile, this notice covers the viewport and the app
+   chrome is hidden entirely (above the toast/modal layers, z 100/200) */
+.mobile-gate { display: none; }
+html.is-mobile { overflow: hidden; }
+html.is-mobile .mobile-gate {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 36px 28px; text-align: center; background: var(--bg);
+}
+html.is-mobile .shell,
+html.is-mobile .fab-stack,
+html.is-mobile .site-credit { display: none; }
+.mobile-gate i { font-size: 42px; color: var(--color-accent); margin-bottom: 18px; }
+.mobile-gate h1 { font-family: var(--font-display); font-size: 22px; letter-spacing: -0.02em; margin: 0 0 8px; }
+.mobile-gate p { margin: 0; max-width: 30em; color: var(--text-body); font-size: 14.5px; line-height: 1.55; }
+.mobile-gate .mg-brand { margin-top: 26px; color: var(--text-muted); font-family: var(--font-display); font-size: 12.5px; letter-spacing: 0.02em; }
