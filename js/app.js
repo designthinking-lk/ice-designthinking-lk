@@ -214,11 +214,13 @@
     if (brandName) renderBrand(brandName);
     renderProjectSwitcher(d);
     var actions = $('#topbarActions');
-    // People & Projects are public; Tools needs sign-in; Admin only for admins.
+    // People & Projects are public; Program & Tools need sign-in; Admin only for admins.
     var loggedIn = signedIn();
     var navTools = $('#navTools');
+    var navProgram = $('#navProgram');
     var navAdmin = $('#navAdmin');
     if (navTools) navTools.hidden = !loggedIn;
+    if (navProgram) navProgram.hidden = !loggedIn;
     if (navAdmin) navAdmin.hidden = !d.isAdmin;
     if (signedIn() && d.me) {
       actions.innerHTML =
@@ -2090,6 +2092,7 @@
   ];
 
   function viewProgram() {
+    if (!signedIn()) return signInGate('the program');
     var labels = programDayLabels();
     var cols = labels.map(function (label, di) {
       var blocks = PG_SKELETON[di].map(function (g) {

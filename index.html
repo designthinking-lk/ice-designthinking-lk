@@ -22,8 +22,8 @@
         crossorigin="anonymous" referrerpolicy="no-referrer">
 
   <!-- bump ?v= on any asset change: GitHub Pages caches for 10 min -->
-  <link rel="stylesheet" href="css/theme.css?v=46">
-  <link rel="stylesheet" href="css/app.css?v=46">
+  <link rel="stylesheet" href="css/theme.css?v=47">
+  <link rel="stylesheet" href="css/app.css?v=47">
   <!-- apply the saved theme before first paint so night mode never flashes -->
   <script>try{if(localStorage.getItem('ice.theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
   <!-- desktop-first: phones get the "open on desktop" gate (markup below, styles in app.css) -->
@@ -104,7 +104,7 @@
   <!-- floating bottom-right cluster: about + program + tools + chat & broadcasts -->
   <div class="fab-stack">
     <a href="#/about" data-nav="about" id="navAbout" class="tools-fab" title="About the program"><i class="fa-regular fa-circle-question"></i><span>About</span></a>
-    <a href="#/program" data-nav="program" id="navProgram" class="tools-fab" title="Program"><i class="fa-regular fa-calendar-days"></i><span>Program</span></a>
+    <a href="#/program" data-nav="program" id="navProgram" class="tools-fab" title="Program" hidden><i class="fa-regular fa-calendar-days"></i><span>Program</span></a>
     <a href="#/tools" data-nav="tools" id="navTools" class="tools-fab" title="Tools" hidden><i class="fa-solid fa-toolbox"></i><span>Tools</span></a>
     <button type="button" class="chat-fab" id="navChatBtn" data-action="toggle-chat" title="Chat &amp; broadcasts" hidden>
       <i class="fa-regular fa-comments"></i>
@@ -125,9 +125,9 @@
   <div id="modalRoot"></div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="js/config.js?v=46"></script>
-  <script src="js/api.js?v=46"></script>
-  <script src="js/chat.js?v=46"></script>
-  <script src="js/app.js?v=46"></script>
+  <script src="js/config.js?v=47"></script>
+  <script src="js/api.js?v=47"></script>
+  <script src="js/chat.js?v=47"></script>
+  <script src="js/app.js?v=47"></script>
 </body>
 </html>
