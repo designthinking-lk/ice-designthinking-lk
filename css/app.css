@@ -1473,23 +1473,26 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 @keyframes tbPop { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
 /* team cards — the grid's two rows split the full height, so cards reach the
    footer and their slots breathe instead of clustering at the top */
-.tb-teams { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: 1fr 1fr; gap: 8px; height: 100%; }
+/* minmax(0,1fr) rows: no min-content floor, so two card rows shrink to fit the
+   height instead of overflowing past the footer */
+.tb-teams { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; height: 100%; }
 /* full-width variant when there is no unassigned column */
 .tb-teams-full { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.tb-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 7px 11px; min-height: 0; }
+.tb-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 7px 11px; min-height: 0; overflow: hidden; }
 .tb-card.tb-full { border-color: rgba(24, 128, 56, 0.5); }
 .tb-card.tb-target { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
 .tb-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
 .tb-head h3 { margin: 0; font-size: 14.5px; }
 .tb-fulltag { color: #188038; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
-/* slots stack one per row (full name shows) and share the card height evenly */
-.tb-slots { flex: 1; display: grid; grid-template-columns: 1fr; grid-auto-rows: 1fr; gap: 2px; min-height: 0; }
-.tb-member { display: flex; align-items: center; gap: 7px; padding: 0 2px; font-size: 12.5px; min-height: 22px; min-width: 0; }
+/* slots stack one per row (full name shows) and share the card height evenly;
+   minmax(0,1fr) lets them shrink so all 7 rows stay on screen */
+.tb-slots { flex: 1; display: grid; grid-template-columns: 1fr; grid-auto-rows: minmax(0, 1fr); gap: 2px; min-height: 0; overflow: hidden; }
+.tb-member { display: flex; align-items: center; gap: 7px; padding: 0 2px; font-size: 12.5px; min-height: 18px; min-width: 0; overflow: hidden; }
 .tb-member > a { color: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tb-member .avatar-sm { flex: none; }
 .tb-empty {
   color: var(--text-faint); font-size: 10.5px; justify-content: center;
-  border: 1px dashed var(--border); border-radius: var(--radius-sm); min-height: 20px;
+  border: 1px dashed var(--border); border-radius: var(--radius-sm); min-height: 0;
 }
 .tb-tie { flex: none; font-size: 11px; color: var(--color-accent); }
 .tb-tag {
