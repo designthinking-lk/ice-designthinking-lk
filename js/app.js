@@ -1457,6 +1457,9 @@
       '<button type="button" class="cskill-close" data-action="close-skills" aria-label="Done"><i class="fa-solid fa-xmark"></i></button></div>' +
       '<div class="cskill-inrow"><input id="skillInput" placeholder="Type a skill…" autocomplete="off">' +
       '<button type="button" class="cskill-addbtn" data-action="add-typed-skill">Add</button></div>' +
+      // the card's current skills mirrored inside the picker, so an added
+      // skill is visible immediately without closing the overlay
+      '<div class="cskill-mine" id="skillMine" hidden></div>' +
       '<div class="cskill-pool" id="skillPool"></div>' +
       '</div>' +
       // intro video picker — an inline overlay on the card (like the skill
@@ -1604,11 +1607,14 @@
 
   // Sync the card skills row + overlay after any change.
   function refreshSkillsUI() {
-    var count = getTagValues().length;
+    var values = getTagValues();
+    var count = values.length;
     var addBtn = $('#skillAddBtn');
     if (addBtn) addBtn.style.display = count >= MAX_SKILLS ? 'none' : '';
     var cnt = $('#skillCount');
     if (cnt) cnt.textContent = '(' + count + '/' + MAX_SKILLS + ')';
+    var mine = $('#skillMine');
+    if (mine) { mine.innerHTML = values.map(cardChip).join(''); mine.hidden = count === 0; }
     renderSkillPool();
   }
 
@@ -1639,6 +1645,9 @@
     var tags = $('#skillTags');
     if (tags) tags.insertAdjacentHTML('beforeend', cardChip(s));
     refreshSkillsUI();
+    // flash the new chip in the picker's mirror row — instant feedback
+    var mineChips = $all('#skillMine [data-skill]');
+    if (mineChips.length) mineChips[mineChips.length - 1].classList.add('just-added');
     saveRegDraft();
     updateJoinState();
     schedulePersona();
@@ -3336,7 +3345,17 @@
         break;
       }
       case 'add-tag': addTag(t.getAttribute('data-skill')); break;
-      case 'rm-tag': e.preventDefault(); t.closest('[data-skill]').remove(); refreshSkillsUI(); saveRegDraft(); updateJoinState(); schedulePersona(); break;
+      case 'rm-tag': {
+        e.preventDefault();
+        // the clicked chip may be the picker's mirror copy — always remove
+        // the canonical chip on the card; refreshSkillsUI resyncs the mirror
+        var rmv = t.closest('[data-skill]').getAttribute('data-skill');
+        $all('#skillTags [data-skill]').forEach(function (c) {
+          if (c.getAttribute('data-skill') === rmv) c.remove();
+        });
+        refreshSkillsUI(); saveRegDraft(); updateJoinState(); schedulePersona();
+        break;
+      }
       case 'open-skills': openSkills(); break;
       case 'close-skills': closeSkills(); break;
       case 'add-typed-skill': { var si3 = $('#skillInput'); if (si3) { addTag(si3.value); si3.value = ''; si3.focus(); } break; }
