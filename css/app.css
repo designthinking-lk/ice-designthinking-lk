@@ -28,12 +28,25 @@ button { font-family: inherit; }
 .topbar {
   flex: none; display: flex; align-items: center; justify-content: flex-end;
   gap: 10px; min-height: 60px; padding: 12px 24px; z-index: 10;
-  /* frosted glass, same recipe as the #/about footer band — content passing
-     under it (e.g. the full-bleed People hive) reads softened, not crisp */
+  /* transparent: the frosted glass is a full-width fixed band (.shell::before)
+     so it reaches the left screen edge and fades at its lower edge like the
+     footer. The topbar just holds its controls above that band. */
+  background: transparent;
+}
+/* frosted-glass app-bar band — full viewport width (over the sidebar too),
+   same recipe as the #/about footer, faded on its lower edge instead of a
+   hard line. Sits above scrolling/hive content (z 4) but below the topbar
+   controls (z 10) and the animated brand (z 70), so both stay crisp on top. */
+.shell::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; height: 76px;
+  z-index: 4; pointer-events: none;
   background: rgba(244, 247, 249, 0.55);
   -webkit-backdrop-filter: blur(14px) saturate(120%);
   backdrop-filter: blur(14px) saturate(120%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
+:root[data-theme="dark"] .shell::before { background: rgba(18, 19, 22, 0.5); }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 
 /* Avatar dropdown menu (anchored under the profile button; not a modal) */
@@ -1153,10 +1166,9 @@ body.chat-open .chat-toggle { background: var(--color-accent-light); border-colo
 /* Component tweaks the shared tokens don't cover: the active nav pill is
    near-black, which vanishes against dark surfaces. */
 :root[data-theme="dark"] .search:focus-within { box-shadow: 0 0 0 3px rgba(144, 77, 255, 0.18); }
-/* side pane blends seamlessly into the page background at night; the app bar
-   keeps its frosted glass (dark tint) so it stays consistent with the footer */
+/* side pane blends seamlessly into the page background at night (the app bar's
+   frosted band carries its own dark tint, so the topbar itself stays clear) */
 :root[data-theme="dark"] .sidebar { background: var(--bg); }
-:root[data-theme="dark"] .topbar { background: rgba(18, 19, 22, 0.5); }
 
 /* ------------------------------------------------- chat & broadcasts pane */
 /* Floating chat button, bottom-right corner (news lives in its Broadcast tab) */
@@ -1707,8 +1719,8 @@ body:has(.site-credit:not([hidden])) .view { padding-bottom: 84px; }
    their content floats above; the nav's octagon turns glassy for legibility.
    (Kept last so it outranks the night-mode surface rules above.) */
 body.landing-bg .sidebar, body.landing-bg .topbar { background: transparent; }
-/* the app bar's frosted blur would smear the video's top edge — drop it here */
-body.landing-bg .topbar { -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* the frosted app-bar band would smear the video's top edge — drop it here */
+body.landing-bg .shell::before { display: none; }
 /* nothing scrolls on the landing — a solid footer band would hard-cut the
    video's bottom fade, so it goes clear here like the rest of the chrome */
 body.landing-bg .site-credit { background: transparent; }
