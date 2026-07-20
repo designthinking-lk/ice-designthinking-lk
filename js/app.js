@@ -3292,34 +3292,36 @@
     }).join('');
 
     // Each pool person: a checkbox+name that toggles selection, plus a "T?"
-    // quick-assign. With 0/1 selected the six team buttons replace the name
-    // inline (same row, no extra height); with 2+ selected use "Add Here".
+    // quick-assign. Opening "T?" keeps the checkbox and avatar exactly where
+    // they are (checkbox just disabled) and swaps only the name for the six
+    // team buttons — no left-jump. With 2+ selected use "Add Here" instead.
     var poolRows = pool.map(function (u) {
       var st = teamSlot(u);
       var sel = !!teamSel[u.id];
+      var quick = teamQuick === u.id;
       var tDisabled = teamBusy || selCount > 1;
-      var inner;
-      if (teamQuick === u.id) {
-        inner = avatar(u, 'avatar-sm') +
-          '<div class="tb-quickrow">' + TEAM_LETTERS.map(function (L) {
-            var isFull = counts[L][st] >= TEAM_CAP[st];
-            return '<button type="button" class="tb-qletter" data-action="assign-team" data-id="' + esc(u.id) + '" data-team="' + L + '"' +
-              ((isFull || teamBusy) ? ' disabled title="Team ' + L + ' has no free ' + st + ' slot"' : ' title="Assign to Team ' + L + '"') + '>' + L + '</button>';
-          }).join('') + '</div>' +
+      // Checkbox + avatar render identically in both modes, so nothing shifts
+      // when the popup opens.
+      var check = '<span class="tb-check' + (sel ? ' on' : '') + (quick ? ' tb-check-off' : '') + '"' +
+        (quick ? '' : ' data-action="tb-toggle-select" data-id="' + esc(u.id) + '"') +
+        '><i class="fa-solid fa-check"></i></span>';
+      var head = check + avatar(u, 'avatar-sm');
+      var tail;
+      if (quick) {
+        tail = '<div class="tb-quickrow">' + TEAM_LETTERS.map(function (L) {
+          var isFull = counts[L][st] >= TEAM_CAP[st];
+          return '<button type="button" class="tb-qletter" data-action="assign-team" data-id="' + esc(u.id) + '" data-team="' + L + '"' +
+            ((isFull || teamBusy) ? ' disabled title="Team ' + L + ' has no free ' + st + ' slot"' : ' title="Assign to Team ' + L + '"') + '>' + L + '</button>';
+        }).join('') + '</div>' +
           '<button type="button" class="tb-qclose" data-action="tb-quick-close" title="Close"><i class="fa-solid fa-xmark"></i></button>';
       } else {
-        inner =
-          '<div class="tb-prow-main" data-action="tb-toggle-select" data-id="' + esc(u.id) + '">' +
-            '<span class="tb-check' + (sel ? ' on' : '') + '"><i class="fa-solid fa-check"></i></span>' +
-            avatar(u, 'avatar-sm') +
-            '<span class="tb-pname" title="' + esc(u.name) + '">' + esc(u.name) + '</span>' +
-            (st === 'mentor' ? '<span class="tb-tag">mentor</span>' : '') +
-          '</div>' +
+        tail = '<span class="tb-pname" data-action="tb-toggle-select" data-id="' + esc(u.id) + '" title="' + esc(u.name) + '">' + esc(u.name) + '</span>' +
+          (st === 'mentor' ? '<span class="tb-tag">mentor</span>' : '') +
           '<button type="button" class="tb-qtoggle" data-action="tb-quick" data-id="' + esc(u.id) + '"' +
             (tDisabled ? ' disabled' : '') + ' title="Quick assign to a team">T?</button>';
       }
       return '<div class="tb-prow' + (sel ? ' selected' : '') + '">' +
-        '<div class="tb-prow-row' + (teamQuick === u.id ? ' tb-quickactive' : '') + '">' + inner + '</div></div>';
+        '<div class="tb-prow-row' + (quick ? ' tb-quickactive' : '') + '">' + head + tail + '</div></div>';
     }).join('');
 
     // No unassigned people → drop the left column entirely and let the six
@@ -3328,19 +3330,19 @@
       return '<div class="teamboard"><div class="tb-teams tb-teams-full">' + cards + '</div></div>';
     }
 
-    // Master select: unchecked / star (some) / checked (all); click flips
-    // between select-all and select-none.
+    // Master select: same checkbox as the rows — empty / star (some) /
+    // check (all); click flips between select-all and select-none.
     var allSel = selCount > 0 && selCount === pool.length;
     var someSel = selCount > 0 && !allSel;
-    var masterIcon = allSel ? '<i class="fa-solid fa-square-check"></i>'
-      : someSel ? '<i class="fa-solid fa-star"></i>' : '<i class="fa-regular fa-square"></i>';
+    var masterBox = '<span class="tb-check' + (allSel || someSel ? ' on' : '') + (someSel ? ' tb-some' : '') + '">' +
+      (someSel ? '<i class="fa-solid fa-star"></i>' : '<i class="fa-solid fa-check"></i>') + '</span>';
     var assignedCount = Object.keys(assigned).length;
     var assignable = users.filter(teamAssignable).length;
     return '<div class="teamboard"><div class="tb-layout">' +
       '<div class="tb-unassigned panel">' +
         '<div class="tb-uhead">' +
-          '<button type="button" class="tb-master' + (someSel ? ' some' : '') + '" data-action="tb-select-all-toggle"' +
-            (teamBusy ? ' disabled' : '') + ' title="Select all / none">' + masterIcon + '</button>' +
+          '<button type="button" class="tb-masterbtn" data-action="tb-select-all-toggle"' +
+            (teamBusy ? ' disabled' : '') + ' title="Select all / none">' + masterBox + '</button>' +
           '<h3><i class="fa-solid fa-user-plus"></i>Unassigned</h3>' +
           (teamBusy ? '<span class="tb-spin"><i class="fa-solid fa-spinner fa-spin"></i></span>' : '') +
           '<span class="tb-progress">' + assignedCount + ' / ' + assignable + '</span>' +
