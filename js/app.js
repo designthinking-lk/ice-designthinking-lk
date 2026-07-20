@@ -291,6 +291,7 @@
       var pane = $('#chatpane');
       if (pane && !pane.hidden) { pane.hidden = true; document.body.classList.remove('chat-open'); }
     } else {
+      chatAutoConnect();   // silently restore the Chat token if granted before
       renderChatPane();
       if (localStorage.getItem(chatKey()) === 'open' && $('#chatpane') && $('#chatpane').hidden) {
         $('#chatpane').hidden = false;
@@ -442,15 +443,8 @@
     if (chatConn.ready) return true;
     chatConn.connecting = true; chatConn.err = '';
     try {
-      await window.IceChat.connect();
-      var info = await window.IceChat.me();
-      chatConn.myId = info.id;
-      // A previously captured authoritative id (from a past send) wins over the
-      // OpenID sub, so message alignment is right even before sending this time.
-      try { var saved = localStorage.getItem('ice.chat.myid'); if (saved) chatConn.myId = saved; } catch (e) { /* private mode */ }
-      chatConn.ready = true;
-      startUnreadPoll();   // keep the fab badge live from here on
-      sweepUnread();       // fire-and-forget first pass
+      await window.IceChat.connect();   // may show the Google popup
+      await finishConnect();
       return true;
     } catch (err) {
       chatConn.err = err.message || 'Could not connect to Google Chat';
@@ -458,6 +452,41 @@
     } finally {
       chatConn.connecting = false;
     }
+  }
+
+  // Shared post-token setup for both the manual and silent connect paths.
+  async function finishConnect() {
+    var info = await window.IceChat.me();
+    chatConn.myId = info.id;
+    // A previously captured authoritative id (from a past send) wins over the
+    // OpenID sub, so message alignment is right even before sending this time.
+    try { var saved = localStorage.getItem('ice.chat.myid'); if (saved) chatConn.myId = saved; } catch (e) { /* private mode */ }
+    chatConn.ready = true;
+    try { localStorage.setItem('ice.chat.granted', '1'); } catch (e) { /* private mode */ }
+    startUnreadPoll();   // keep the fab badge live from here on
+    sweepUnread();       // fire-and-forget first pass
+  }
+
+  // On load, silently re-establish the token (no popup) if the user has
+  // connected before — so a refresh doesn't drop them back to the gate. The
+  // GIS script loads async, so retry until it's ready.
+  async function chatAutoConnect() {
+    if (chatConn.ready || chatConn.autoTried) return;
+    var granted = false;
+    try { granted = localStorage.getItem('ice.chat.granted') === '1'; } catch (e) { /* private mode */ }
+    if (!granted) return;                       // never auto-connect without a prior grant
+    if (!chatConfigured()) {                     // GIS not loaded yet — retry shortly
+      if (!chatConn.autoScheduled) {
+        chatConn.autoScheduled = true;
+        setTimeout(function () { chatConn.autoScheduled = false; chatAutoConnect(); }, 400);
+      }
+      return;
+    }
+    chatConn.autoTried = true;
+    var ok = await window.IceChat.reconnect();   // silent; false if it needs UI
+    if (!ok) return;                             // leave the gate; manual Connect still works
+    await finishConnect();
+    if (commTab === 'chat') renderChatPane();     // reflect the now-connected state
   }
 
   function chatEmptyInbox() {

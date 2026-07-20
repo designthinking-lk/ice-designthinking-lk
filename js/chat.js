@@ -40,7 +40,11 @@
   // The consent popup must be spent inside a user gesture, so getAccessToken is
   // only ever called from a click handler (the "Connect" button / pane open).
 
-  function getAccessToken() {
+  // opts.silent = true attempts a no-UI token renewal (prompt: '') — succeeds
+  // without a popup when the user has already granted consent and still has an
+  // active Google session, so a page refresh doesn't force "Connect" again.
+  function getAccessToken(opts) {
+    opts = opts || {};
     return new Promise(function (resolve, reject) {
       if (connected()) return resolve(accessToken);
       if (!configured()) return reject(new Error('Google Chat is not set up yet — contact the organizers.'));
@@ -57,8 +61,16 @@
           reject(new Error((err && err.message) || 'Google sign-in was closed'));
         },
       });
-      client.requestAccessToken();
+      client.requestAccessToken(opts.silent ? { prompt: '' } : {});
     });
+  }
+
+  // Silent reconnect: resolves true if a token was obtained without any UI,
+  // false otherwise (caller then shows the Connect button). Never rejects.
+  function reconnect() {
+    if (connected()) return Promise.resolve(true);
+    if (!configured()) return Promise.resolve(false);
+    return getAccessToken({ silent: true }).then(function () { return true; }, function () { return false; });
   }
 
   // Low-level authed fetch. On 401 (token expired mid-session) it clears the
@@ -169,6 +181,7 @@
     configured: configured,
     connected: connected,
     connect: getAccessToken,   // ensure a token from within a gesture
+    reconnect: reconnect,      // silent, no-UI token renewal (returns bool)
     me: me,
     findDm: findDm,
     ensureDm: ensureDm,
