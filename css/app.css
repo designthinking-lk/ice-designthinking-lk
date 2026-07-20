@@ -856,8 +856,16 @@ table.admin.people .btn.loading .spin, .invite-card .btn.loading .spin { positio
 /* ---- admin invites (People tab) ---- */
 .invite-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .invite-card { margin-bottom: 18px; }
-.invite-input { padding: 10px 12px; }
+/* The invite field is intentionally a light/white field, even on dark theme —
+   make the whole control light so the padding area matches the input box. */
+.invite-input { padding: 10px 12px; background: #fff; border-color: #d5d8dd; }
+.invite-input:focus-within { border-color: var(--color-accent); }
+.invite-input input { background: transparent; color: #17181C; }
+.invite-input input::placeholder { color: #8A939D; }
 .invite-input input.bad { color: #b3261e; }
+/* Chips sit on white here, so give them a light-on-light treatment. */
+.invite-input .echip { background: #eef0f3; border-color: #d5d8dd; color: #3A3F48; }
+.invite-input .echip:hover { border-color: #c2c6cd; color: #3A3F48; }
 .echip { cursor: default; }
 .echip:hover { border-color: var(--border); color: var(--text-body); }
 .echip .chip-x {
@@ -1721,12 +1729,21 @@ body.landing-bg .side-oct {
 .about { max-width: 780px; margin: 0 auto; padding: 28px 0 96px; }
 /* Signed in there's no opaque .site-credit band behind the fab-stack, so the
    bare About/Program/Tools labels would show content scrolling through them.
-   Give #/about the same opaque footer band the public view gets from
-   .site-credit — content scrolls behind it, cleared, not through it.
-   (Sits above the scrolling content but below the fab-stack at z-index 55.) */
+   Give #/about a frosted-glass footer band: content scrolls behind it,
+   softened and cleared rather than crisply overlapping. Theme-driven tint
+   (light neutral / near-black) with a top mask so the edge fades in, not a
+   hard line. Sits above scrolling content but below the fab-stack (z 55). */
 body:has(#navAbout.active):has(.site-credit[hidden])::after {
   content: ""; position: fixed; left: 0; right: 0; bottom: 0;
-  height: 84px; background: var(--bg); z-index: 5; pointer-events: none;
+  height: 92px; z-index: 5; pointer-events: none;
+  background: rgba(244, 247, 249, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-mask-image: linear-gradient(to top, #000 55%, transparent);
+  mask-image: linear-gradient(to top, #000 55%, transparent);
+}
+:root[data-theme="dark"] body:has(#navAbout.active):has(.site-credit[hidden])::after {
+  background: rgba(18, 19, 22, 0.5);
 }
 .ab-hero h1 {
   font-size: clamp(30px, 4.6vw, 46px); letter-spacing: -0.03em;
