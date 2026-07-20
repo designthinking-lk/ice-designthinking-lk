@@ -397,6 +397,21 @@
 
   function chatKey() { return 'ice.chat.' + A.getProject(); }
 
+  // Shown after the DM is ready but the browser wouldn't auto-open it (first
+  // message each session, once Google's consent popup used up the click). The
+  // anchor is a real user click, so the new tab is never blocked.
+  function openChatLinkModal(name, uri) {
+    modal('<div class="chat-open-modal">' +
+      '<i class="fa-regular fa-comment-dots chat-open-ic"></i>' +
+      '<h2>Conversation ready</h2>' +
+      '<p style="color:var(--text-body)">Your Google Chat with ' + esc(name) + ' is set up.</p>' +
+      '<div class="form-actions">' +
+      '<a class="btn btn-gradient" href="' + esc(uri) + '" target="_blank" rel="noopener" data-action="close-modal">' +
+      '<i class="fa-regular fa-paper-plane"></i> Open conversation</a>' +
+      '<button class="btn btn-ghost" data-action="close-modal">Not now</button>' +
+      '</div></div>');
+  }
+
   function workEmailOf(u) {
     var w = u && u.workEmail;
     return (w && /@designthinking\.lk$/i.test(w)) ? w : '';
@@ -1419,7 +1434,10 @@
     return '<form class="form pf-grid" id="profileForm" data-new="' + (isNew ? '1' : '') + '" data-role="' + role + '">' +
 
       '<div class="pf-left">' +
-      '<div class="idcard-scene"><div class="idcard" id="idcard">' +
+      '<div class="idcard-scene">' +
+      // submit overlay — blocks card interaction while the request is in flight
+      '<div class="card-busy" id="cardBusy" hidden><span class="spin"></span></div>' +
+      '<div class="idcard" id="idcard">' +
 
       // ---------------- front
       '<div class="idface idfront">' +
@@ -3206,8 +3224,15 @@
       case 'chat-dm': {
         var chatEmail = t.getAttribute('data-email');
         if (!chatEmail) { toast('This person has no workshop email yet.', true); break; }
+        var chatName = (t.getAttribute('title') || '').replace(/^Message\s+/, '') || 'this person';
         busy(t, true);
-        try { await window.IceChat.openDm(chatEmail); }
+        try {
+          var dm = await window.IceChat.openDm(chatEmail);
+          // The first message each session spends its click on Google's
+          // consent popup, so the DM tab can't auto-open — offer a one-click
+          // open that stays inside our own modal.
+          if (dm && !dm.opened && dm.uri) openChatLinkModal(chatName, dm.uri);
+        }
         catch (err) { toast(err.message || 'Could not open Google Chat', true); }
         busy(t, false);
         break;
@@ -3514,6 +3539,8 @@
       var invalid = validateProfile(form);
       if (invalid) { status.textContent = invalid; return; }
       busy(btn, true);
+      var cardBusy = $('#cardBusy');
+      if (cardBusy) cardBusy.hidden = false;
       try {
         // if the user picked a new photo, bake the cropped square & upload it
         if (photoEd) {
@@ -3537,7 +3564,11 @@
         location.hash = '#/profile/' + (me() ? me().id : '');
       } catch (err) {
         status.textContent = err.message || 'Something went wrong.';
-      } finally { busy(btn, false); }
+      } finally {
+        busy(btn, false);
+        var cb = $('#cardBusy');
+        if (cb) cb.hidden = true;
+      }
     }
 
     if (form.id === 'teamForm') {

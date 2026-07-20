@@ -513,7 +513,20 @@ textarea.input { resize: vertical; min-height: 90px; }
 .form-loading .spin { width: 18px; height: 18px; color: var(--color-accent); }
 
 /* --------------------------------------------------------------- ID card */
-.idcard-scene { perspective: 1600px; margin: 22px 0 26px; }
+.idcard-scene { perspective: 1600px; margin: 22px 0 26px; position: relative; }
+/* submit overlay: freezes the card (no clicks, no drag) until register/save
+   returns; sits above both faces and the flip animation */
+.card-busy {
+  position: absolute; inset: 0; z-index: 20; border-radius: 18px;
+  display: flex; align-items: center; justify-content: center; cursor: wait;
+  background: rgba(18, 6, 40, 0.55);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.card-busy[hidden] { display: none; }
+.card-busy .spin {
+  width: 34px; height: 34px;
+  border: 3px solid rgba(255,255,255,0.3); border-right-color: transparent;
+}
 .idcard {
   position: relative; width: 100%; aspect-ratio: 1.586 / 1; /* ISO credit-card */
   transform-style: preserve-3d; transition: transform 0.7s cubic-bezier(.2,.7,.2,1);
@@ -904,6 +917,17 @@ tr.invite-row .invite-noname { color: var(--text-faint); }
   width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; padding: 26px;
 }
 .modal h2 { font-size: 21px; margin-bottom: 18px; }
+/* "conversation ready" hand-off modal */
+.chat-open-modal { text-align: center; }
+.chat-open-modal h2 { margin-bottom: 8px; }
+.chat-open-modal p { margin-bottom: 20px; }
+.chat-open-ic {
+  font-size: 30px; color: var(--color-accent); margin-bottom: 12px;
+  display: inline-flex; width: 62px; height: 62px; align-items: center; justify-content: center;
+  border-radius: 50%; background: rgba(97, 0, 255, 0.1);
+}
+.chat-open-modal .form-actions { justify-content: center; }
+.chat-open-modal .form-actions .btn { text-decoration: none; }
 @keyframes fadein { from { opacity: 0; } }
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 200;
