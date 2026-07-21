@@ -1047,7 +1047,7 @@
         iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'icefv', channel: 'widget' }), '*');
       } catch (err) { /* not ready yet */ }
     }, 500);
-    setTimeout(function () { show(0); }, 8000); // safety net
+    setTimeout(function () { show(0); }, 5000); // safety net — cap the wait at 5s
   }
 
   function viewHome() {
