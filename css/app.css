@@ -263,13 +263,13 @@ button { font-family: inherit; }
    deliberate; it crossfades away on the video's own 2 s reveal. */
 .landing-loader {
   position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(115deg, #ffffff 0%, #f1f4fb 25%, #edf7fa 50%, #f5f0fc 75%, #ffffff 100%);
+  background: linear-gradient(115deg, #eaf0fb 0%, #d3e2fa 25%, #c8ecf3 50%, #e2d4f6 75%, #eaf0fb 100%);
   background-size: 300% 300%;
   animation: veil-drift 6s ease-in-out infinite alternate;
   transition: opacity 2s ease;
 }
 :root[data-theme="dark"] .landing-loader {
-  background: linear-gradient(115deg, #121316 0%, #171a21 25%, #141a1e 50%, #191623 75%, #121316 100%);
+  background: linear-gradient(115deg, #191d27 0%, #212b3f 25%, #182c34 50%, #281c3f 75%, #191d27 100%);
   background-size: 300% 300%;
 }
 .landing-loader.done { opacity: 0; }
@@ -1784,6 +1784,21 @@ body:has(#navAbout.active):has(.site-credit[hidden])::after {
   margin-top: 36px; padding: 22px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
 }
 .ab-stats-note { margin-left: auto; color: var(--text-faint); font-size: 12.5px; align-self: center; }
+
+/* Wide screens: lift the numbers out of the flow into a fixed rail on the
+   right — mirrors the home landing's lower-right stat stack, so they stay put
+   as the story scrolls beside them (there's room clear of the 780px column). */
+@media (min-width: 1120px) {
+  .ab-stats {
+    position: fixed; right: 44px; top: 50%; transform: translateY(-50%);
+    z-index: 4; flex-direction: column; align-items: flex-end; text-align: right;
+    gap: 18px; margin: 0; padding: 0; border: 0; max-width: 200px;
+  }
+  .ab-stats .stat b { font-size: 32px; }
+  .ab-stats-note {
+    margin-left: 0; align-self: flex-end; order: -1; margin-bottom: 4px;
+  }
+}
 
 .ab-section { margin-top: 56px; }
 .ab-section h2 {

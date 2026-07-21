@@ -1033,9 +1033,9 @@
       if (String(e.origin).indexOf('youtube.com') === -1) return;
       var d; try { d = JSON.parse(e.data); } catch (err) { return; }
       // YouTube flashes its center controls for ~3 s whenever playback starts;
-      // reveal only once 3.5 s of footage have actually played (start=12).
+      // reveal once ~2 s of footage have actually played (start=12).
       if (d && d.event === 'infoDelivery' && d.info &&
-          d.info.playerState === 1 && d.info.currentTime >= 15.5) {
+          d.info.playerState === 1 && d.info.currentTime >= 14) {
         window.removeEventListener('message', onMsg);
         show(0);
       }
@@ -2566,13 +2566,6 @@
           '<div class="ab-alum-body"><b>' + a.name + '</b><span>' + a.role + '</span></div></div>';
       }).join('') +
       '</div></section>' +
-
-      '<section class="ab-section ab-outro">' +
-      '<p>See what the 2025 teams built in three days — from assistive tech for blind students to AI language immersion — on the <a href="#/projects">Projects page</a>.</p>' +
-      '<p class="ab-links">ICE is run by DT@SL — Ideas to Innovations &nbsp;' +
-      '<a href="https://designthinking.lk" target="_blank" rel="noopener">designthinking.lk</a> &middot; ' +
-      '<a href="https://www.facebook.com/DesigninnovationsSL" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i> Facebook</a></p>' +
-      '</section>' +
       '</div>';
   }
 
