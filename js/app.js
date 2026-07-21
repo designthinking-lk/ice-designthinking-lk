@@ -2739,7 +2739,11 @@
       el.classList.remove('thinking');
       return;
     }
+    // no cache → Claude is deriving it; churn gibberish in the meantime so the
+    // wait reads as "loading" rather than an empty gap (stopped on response)
+    var stopScramble = startScramble(el);
     A.api('skill_info', { skill: name }).then(function (r) {
+      stopScramble();
       var out = $('#ssDesc');
       if (!out) return;
       out.classList.remove('thinking');
@@ -2750,9 +2754,30 @@
         try { localStorage.setItem('ice.skilldesc', JSON.stringify(c)); } catch (e) { /* quota */ }
       }
     }).catch(function () {
+      stopScramble();
       var out = $('#ssDesc');
       if (out) { out.classList.remove('thinking'); out.textContent = ''; }
     });
+  }
+
+  // A fast-churning gibberish placeholder used as a text loading animation:
+  // fills el with word-shaped random glyphs that reshuffle every frame until
+  // the caller's stop() swaps in the real text. Self-cancels if el detaches.
+  var SCRAMBLE_GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz@#$%&*<>/{}[]=+';
+  function startScramble(el) {
+    if (!el) return function () {};
+    // fixed word lengths so the block keeps a steady, text-like shape
+    var lens = [];
+    for (var i = 0; i < 16; i++) lens.push(3 + Math.floor(Math.random() * 7));
+    var timer = setInterval(function () {
+      if (!el.isConnected) { clearInterval(timer); return; }
+      el.textContent = lens.map(function (n) {
+        var w = '';
+        for (var k = 0; k < n; k++) w += SCRAMBLE_GLYPHS.charAt(Math.floor(Math.random() * SCRAMBLE_GLYPHS.length));
+        return w;
+      }).join(' ');
+    }, 45);
+    return function () { clearInterval(timer); };
   }
 
   function initSkillsGraph(canvas) {
