@@ -294,7 +294,11 @@ button { font-family: inherit; }
 .landing-intro .li-year {
   font-family: var(--font-display); font-weight: 700; font-size: 15px;
   letter-spacing: -0.01em;
+  /* the parent is pointer-events:none (informative) — re-enable the link only */
+  display: inline-block; pointer-events: auto;
+  color: inherit; text-decoration: none;
 }
+.landing-intro .li-year:hover { text-decoration: underline; text-underline-offset: 3px; }
 .landing-intro .li-stats {
   display: flex; flex-direction: column; align-items: flex-end;
   gap: 12px; margin-top: 12px;
