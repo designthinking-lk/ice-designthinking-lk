@@ -1290,7 +1290,6 @@
       (links ? '<div class="panel" style="margin-bottom:20px"><h3><i class="fa-solid fa-link"></i>Links</h3><ul class="link-list">' + links + '</ul></div>' : '') +
       (myTeams.length ? '<div class="panel" style="margin-bottom:20px"><h3><i class="fa-solid fa-people-group"></i>Teams</h3><ul class="link-list">' +
         myTeams.map(function (t) { return '<li><i class="fa-solid fa-people-group"></i><a href="#/team/' + esc(t.id) + '">' + esc(t.name) + '</a></li>'; }).join('') + '</ul></div>' : '') +
-      (isMe ? walletPanelHtml_() : '') +
       '</div></div>';
   }
 
@@ -2264,7 +2263,8 @@
     }
     if (!formReady()) return profileScaffold('Edit profile', '', formLoading());
     setTimeout(afterProfileForm, 0);
-    return profileScaffold('Edit profile', '', profileForm(me(), false));
+    // The Add-to-Wallet QR + button lives with the member card, on this screen.
+    return profileScaffold('Edit profile', '', profileForm(me(), false) + walletPanelHtml_());
   }
 
   function profileScaffold(title, sub, inner) {
