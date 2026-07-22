@@ -1905,3 +1905,35 @@ html.is-mobile .site-credit { display: none; }
 .mobile-gate h1 { font-family: var(--font-display); font-size: 22px; letter-spacing: -0.02em; margin: 0 0 8px; }
 .mobile-gate p { margin: 0; max-width: 30em; color: var(--text-body); font-size: 14.5px; line-height: 1.55; }
 .mobile-gate .mg-brand { margin-top: 26px; color: var(--text-muted); font-family: var(--font-display); font-size: 12.5px; letter-spacing: 0.02em; }
+
+/* ---------------------------------------------------------------- wallet */
+.wallet-panel .wallet-lead { margin: 0 0 14px; color: var(--text-muted); font-size: 13.5px; line-height: 1.5; }
+.wallet-body { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.wallet-loading { color: var(--text-muted); font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+.wallet-qr { flex: 0 0 auto; padding: 10px; background: #fff; border-radius: var(--radius-md); border: 1px solid var(--border); line-height: 0; }
+.wallet-qr img { display: block; border-radius: 4px; }
+.wallet-side { flex: 1 1 180px; min-width: 160px; }
+.wallet-scan { margin: 0 0 12px; color: var(--text-body); font-size: 13px; line-height: 1.5; }
+.wallet-err { color: #d23; font-size: 13.5px; margin: 0; }
+
+.wallet-btns { display: flex; flex-direction: column; gap: 10px; }
+.btn-wallet {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 11px 16px; border-radius: 999px; font-weight: 600; font-size: 14px;
+  border: 1px solid transparent; cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.btn-wallet i { font-size: 18px; }
+.btn-wallet-google { background: #202124; color: #fff; }
+.btn-wallet-google:hover { background: #000; color: #fff; }
+.btn-wallet-apple { background: #000; color: #fff; }
+.btn-wallet.is-soon { opacity: 0.5; cursor: default; pointer-events: none; }
+.btn-wallet-lg { padding: 14px 22px; font-size: 15.5px; }
+
+/* #/wallet handoff page */
+.wallet-view { max-width: 460px; margin: 8vh auto 0; padding: 0 20px; text-align: center; }
+.wallet-hero { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 34px 28px; box-shadow: var(--shadow-md); }
+.wallet-mark { width: 62px; height: 62px; margin: 0 auto 16px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(221deg, #00D7EE 0%, #6100FF 100%); color: #fff; font-size: 26px; }
+.wallet-hero h1 { font-family: var(--font-display); font-size: 23px; letter-spacing: -0.02em; margin: 0 0 8px; }
+.wallet-sub { margin: 0 0 22px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+.wallet-action { display: flex; flex-direction: column; gap: 12px; align-items: center; }

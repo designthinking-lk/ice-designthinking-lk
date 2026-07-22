@@ -1288,9 +1288,109 @@
       ((u.skills || []).length ? '<div class="panel" style="margin-bottom:20px"><h3><i class="fa-solid fa-wand-magic-sparkles"></i>Skills</h3><div class="skills">' +
         u.skills.map(function (s) { return skillChip(s); }).join('') + '</div></div>' : '') +
       (links ? '<div class="panel" style="margin-bottom:20px"><h3><i class="fa-solid fa-link"></i>Links</h3><ul class="link-list">' + links + '</ul></div>' : '') +
-      (myTeams.length ? '<div class="panel"><h3><i class="fa-solid fa-people-group"></i>Teams</h3><ul class="link-list">' +
+      (myTeams.length ? '<div class="panel" style="margin-bottom:20px"><h3><i class="fa-solid fa-people-group"></i>Teams</h3><ul class="link-list">' +
         myTeams.map(function (t) { return '<li><i class="fa-solid fa-people-group"></i><a href="#/team/' + esc(t.id) + '">' + esc(t.name) + '</a></li>'; }).join('') + '</ul></div>' : '') +
+      (isMe ? walletPanelHtml_() : '') +
       '</div></div>';
+  }
+
+  // ------------------------------------------------------- wallet pass
+
+  /** iOS/iPadOS detection — iPadOS 13+ reports as MacIntel with touch. */
+  function isApplePlatform_() {
+    var ua = navigator.userAgent || '';
+    return /iP(hone|ad|od)/.test(ua) ||
+           (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+  }
+
+  /** Panel on your own profile: a QR to add the live member card to your
+   *  phone's wallet, plus a same-device button. Filled by initWalletPanel(). */
+  function walletPanelHtml_() {
+    return '<div class="panel wallet-panel" id="walletPanel">' +
+      '<h3><i class="fa-solid fa-wallet"></i>Wallet card</h3>' +
+      '<p class="wallet-lead">Add your ICE member card to your phone — it updates live with the program, your team and score.</p>' +
+      '<div class="wallet-body"><div class="wallet-loading"><span class="spin"></span> Preparing your card…</div></div>' +
+      '</div>';
+  }
+
+  function renderQr_(el, text) {
+    try {
+      var qr = qrcode(0, 'M');
+      qr.addData(text);
+      qr.make();
+      el.innerHTML = qr.createImgTag(5, 2);
+      var img = el.querySelector('img');
+      if (img) { img.style.width = '190px'; img.style.height = '190px'; img.style.imageRendering = 'pixelated'; img.alt = 'Scan to add to wallet'; }
+    } catch (e) {
+      el.textContent = 'Could not render QR.';
+    }
+  }
+
+  /** Button in the profile panel — opens the handoff page, which detects the
+   *  device and offers Apple and/or Google. Same URL the QR encodes, so it
+   *  works whether tapped here or scanned onto a phone. */
+  function walletButtons_(handoffUrl) {
+    return '<div class="wallet-btns">' +
+      '<a class="btn-wallet btn-wallet-google" href="' + esc(handoffUrl) + '" target="_blank" rel="noopener">' +
+      '<i class="fa-solid fa-wallet"></i><span>Add to wallet</span></a></div>';
+  }
+
+  /** Fills #walletPanel with a QR + button. Mints a short-lived wallet link. */
+  function initWalletPanel() {
+    var panel = $('#walletPanel');
+    if (!panel) return;
+    var body = panel.querySelector('.wallet-body');
+    A.api('wallet_link', {}).then(function (r) {
+      if (!r || !r.url) throw new Error('no url');
+      body.innerHTML =
+        '<div class="wallet-qr" id="walletQr"></div>' +
+        '<div class="wallet-side">' +
+        '<p class="wallet-scan">Scan with your phone camera, or tap below on your phone:</p>' +
+        walletButtons_(r.url) + '</div>';
+      renderQr_($('#walletQr'), r.url);
+    }).catch(function () {
+      body.innerHTML = '<p class="wallet-err">Could not prepare the wallet card. Please try again.</p>';
+    });
+  }
+
+  /** #/wallet handoff page — the phone lands here after scanning the QR. The
+   *  `wt` in the URL authenticates (the phone has no session token), so we ask
+   *  wallet_pass for the Google save URL and hand off to the wallet app. */
+  function viewWallet() {
+    return '<div class="wallet-view" id="walletView">' +
+      '<div class="wallet-hero">' +
+      '<div class="wallet-mark"><i class="fa-solid fa-wallet"></i></div>' +
+      '<h1>Your ICE member card</h1>' +
+      '<p class="wallet-sub">Add it to your wallet — it updates live during the event.</p>' +
+      '<div class="wallet-action"><div class="wallet-loading"><span class="spin"></span> Preparing your card…</div></div>' +
+      '</div></div>';
+  }
+
+  function initWalletHandoff() {
+    var view = $('#walletView');
+    if (!view) return;
+    var action = view.querySelector('.wallet-action');
+    var m = (location.hash || '').match(/[?&]wt=([^&]+)/);
+    var wt = m ? decodeURIComponent(m[1]) : '';
+    var params = wt ? { wt: wt } : {};
+    if (!wt && !signedIn()) {
+      action.innerHTML = '<p class="wallet-err">This link is missing or expired. Open your profile and scan the QR again.</p>';
+      return;
+    }
+    // Fetch both wallets; Apple silently drops out if not configured yet.
+    var jobs = [
+      A.api('wallet_pass', params).then(function (r) { return { google: r && r.url }; }, function () { return {}; }),
+      A.api('apple_pass_link', params).then(function (r) { return { apple: r && r.url }; }, function () { return {}; }),
+    ];
+    Promise.all(jobs).then(function (rs) {
+      var g = null, a = null;
+      rs.forEach(function (x) { if (x.google) g = x.google; if (x.apple) a = x.apple; });
+      var btnG = g ? '<a class="btn-wallet btn-wallet-google btn-wallet-lg" href="' + esc(g) + '"><i class="fa-brands fa-google-wallet"></i><span>Add to Google Wallet</span></a>' : '';
+      var btnA = a ? '<a class="btn-wallet btn-wallet-apple btn-wallet-lg" href="' + esc(a) + '"><i class="fa-brands fa-apple"></i><span>Add to Apple Wallet</span></a>' : '';
+      // On Apple devices lead with the Apple button.
+      var html = isApplePlatform_() ? (btnA + btnG) : (btnG + btnA);
+      action.innerHTML = html || '<p class="wallet-err">Could not prepare your card. Reopen the QR from your profile.</p>';
+    });
   }
 
   // ------------------------------------------------------------- teams
@@ -3449,6 +3549,7 @@
     { re: /^#\/announcements$/, view: viewAnnouncements },
     { re: /^#\/register$/, view: viewRegister },
     { re: /^#\/me$/, view: viewMe },
+    { re: /^#\/wallet(?:\?.*)?$/, view: viewWallet },
     { re: /^#\/admin$/, view: viewAdmin },
   ];
 
@@ -3487,6 +3588,9 @@
     if (fv) initLandingVideo(fv);
     // program: swap the skeleton for live calendar events when configured
     if ($('.program-grid')) initProgram();
+    // wallet: profile QR panel + the phone's #/wallet handoff page
+    if ($('#walletPanel')) initWalletPanel();
+    if ($('#walletView')) initWalletHandoff();
     // skill tag input
     var skillInput = $('#skillInput');
     if (skillInput) {
