@@ -51,25 +51,36 @@ button { font-family: inherit; }
 :root[data-theme="dark"] .shell::before { background: rgba(18, 19, 22, 0.5); }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 
-/* Avatar dropdown menu (anchored under the profile button; not a modal) */
+/* Avatar action strip — the account options are a single horizontal row that
+   spawns behind the avatar circle and glides out toward the left. Sits at the
+   avatar's own height; it is allowed to slide over the night-mode toggle. */
 .topbar { position: relative; }
 .menu-pop {
-  position: absolute; top: calc(100% - 4px); right: 16px; z-index: 70;
-  min-width: 210px; padding: 6px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-md);
+  position: absolute; top: 50%; right: 64px; z-index: 70; /* right edge just left of the 32px avatar */
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 8px;
+  height: 32px; transform: translateY(-50%);
+  animation: menu-strip-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .menu-pop[hidden] { display: none; }
-.menu-head { padding: 8px 12px 6px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
-.menu-item {
-  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
-  padding: 9px 12px; border-radius: 8px; font: inherit; font-size: 14px; color: var(--text);
-  background: none; border: none; cursor: pointer; text-decoration: none;
+@keyframes menu-strip-in {
+  /* start tucked behind the avatar (shifted right, invisible), glide left in */
+  from { opacity: 0; transform: translateY(-50%) translateX(30px); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
 }
-.menu-item:hover { background: var(--bg-subtle); }
-.menu-item i { width: 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
-.menu-sep { height: 1px; background: var(--border); margin: 5px 6px; }
-.menu-item.danger { color: #b3261e; }
+@media (prefers-reduced-motion: reduce) { .menu-pop { animation: none; } }
+.menu-item {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px;
+  padding: 0 14px; border-radius: 999px; white-space: nowrap;
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow-md); cursor: pointer; text-decoration: none;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.menu-item:hover { background: var(--bg-subtle); transform: translateY(-1px); }
+.menu-item i { font-size: 13px; color: var(--text-muted); }
+.menu-item.danger { color: #b3261e; border-color: rgba(179, 38, 30, 0.28); }
 .menu-item.danger i { color: inherit; }
+.menu-item.danger:hover { background: rgba(179, 38, 30, 0.08); }
 
 /* ----------------------------------------------------------------- sidebar */
 .sidebar {
@@ -180,6 +191,7 @@ button { font-family: inherit; }
   display: flex; align-items: center; justify-content: center;
   padding: 0; background: none; border: none; border-radius: 50%;
   cursor: pointer; line-height: 0;
+  position: relative; z-index: 72; /* stays above the action strip that glides out from behind it */
 }
 .avatar-circle-btn .avatar { transition: box-shadow 0.15s; }
 .avatar-circle-btn:hover .avatar { box-shadow: 0 0 0 3px rgba(97, 0, 255, 0.18); }
@@ -532,7 +544,7 @@ textarea.input { resize: vertical; min-height: 90px; }
 /* inactive until the card is complete */
 .consent:has(input:disabled) { opacity: 0.5; cursor: default; }
 .consent input:disabled { cursor: default; }
-.pf-right .form-actions { flex: none; }
+.pf-right .form-actions { flex: none; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .form-loading {
   display: flex; align-items: center; gap: 12px; color: var(--text-muted);
   padding: 60px 0; font-size: 15px;
@@ -1916,6 +1928,29 @@ html.is-mobile .site-credit { display: none; }
 .wallet-side { flex: 1 1 180px; min-width: 160px; }
 .wallet-scan { margin: 0 0 12px; color: var(--text-body); font-size: 13px; line-height: 1.5; }
 .wallet-err { color: #d23; font-size: 13.5px; margin: 0; }
+
+/* Add-to-Wallet flyout — occupies the persona space on #/me while shown */
+.wallet-flyout {
+  flex: 1; position: relative; display: flex; align-items: center;
+  gap: 18px; flex-wrap: wrap; padding: 8px 36px 4px 2px; box-sizing: border-box;
+  animation: wallet-flyout-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.wallet-flyout[hidden] { display: none; }
+@keyframes wallet-flyout-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.wallet-flyout-body { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.wallet-flyout-side { flex: 1 1 160px; min-width: 150px; }
+.wallet-flyout-close {
+  position: absolute; top: -4px; right: 0; z-index: 2;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer; font-size: 14px; line-height: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.wallet-flyout-close:hover { background: var(--bg-subtle); color: var(--text); }
 
 .wallet-btns { display: flex; flex-direction: column; gap: 10px; }
 .btn-wallet {

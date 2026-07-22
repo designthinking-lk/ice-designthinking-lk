@@ -395,16 +395,15 @@
     if (!pop.hidden && pop.getAttribute('data-kind') === kind) { closeMenu(); return; }
     var d = state.data || {};
     var items;
+    // Horizontal strip: first item sits nearest the avatar (row-reverse in CSS).
     if (kind === 'user' && d.me) {
       items =
-        '<div class="menu-head">' + esc(d.me.name) + '</div>' +
-        '<a class="menu-item" href="#/profile/' + esc(d.me.id) + '" data-action="menu-nav"><i class="fa-regular fa-user"></i>My profile</a>' +
-        '<div class="menu-sep"></div>' +
-        '<button class="menu-item danger" data-action="sign-out"><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>';
+        '<a class="menu-item" href="#/profile/' + esc(d.me.id) + '" data-action="menu-nav" title="My profile"><i class="fa-regular fa-user"></i>My profile</a>' +
+        '<button class="menu-item danger" data-action="sign-out" title="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>';
     } else {
       // Signed in but not registered — the "Complete registration" CTA already
       // lives in the topbar, so the menu only needs sign-out.
-      items = '<button class="menu-item danger" data-action="sign-out"><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>';
+      items = '<button class="menu-item danger" data-action="sign-out" title="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>';
     }
     pop.innerHTML = items;
     pop.setAttribute('data-kind', kind);
@@ -1352,6 +1351,53 @@
     });
   }
 
+  // ---- Add-to-Wallet flyout on #/me: flips a QR into the persona space,
+  //      auto-hiding after 10s of inactivity. QR is minted lazily on first open.
+  var walletFlyoutTimer = null;
+  function clearWalletFlyoutTimer() {
+    if (walletFlyoutTimer) { clearTimeout(walletFlyoutTimer); walletFlyoutTimer = null; }
+  }
+  function resetWalletFlyoutTimer() {
+    clearWalletFlyoutTimer();
+    walletFlyoutTimer = setTimeout(hideWalletFlyout, 10000);
+  }
+  function hideWalletFlyout() {
+    clearWalletFlyoutTimer();
+    var fly = $('#walletFlyout'), persona = $('#personaPanel');
+    if (fly) fly.hidden = true;
+    if (persona) persona.hidden = false;
+  }
+  function showWalletFlyout() {
+    var fly = $('#walletFlyout'), persona = $('#personaPanel');
+    if (!fly) return;
+    if (persona) persona.hidden = true;
+    fly.hidden = false;
+    // reset the inactivity timer on any interaction inside the flyout
+    if (!fly._wired) {
+      fly._wired = true;
+      ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (ev) {
+        fly.addEventListener(ev, resetWalletFlyoutTimer, { passive: true });
+      });
+    }
+    // mint + render the QR once, then reuse
+    if (!fly.getAttribute('data-loaded')) {
+      var body = fly.querySelector('.wallet-flyout-body');
+      A.api('wallet_link', {}).then(function (r) {
+        if (!r || !r.url) throw new Error('no url');
+        body.innerHTML =
+          '<div class="wallet-qr" id="walletQr"></div>' +
+          '<div class="wallet-flyout-side">' +
+          '<p class="wallet-scan">Scan with your phone camera, or tap below on your phone:</p>' +
+          walletButtons_(r.url) + '</div>';
+        renderQr_($('#walletQr'), r.url);
+        fly.setAttribute('data-loaded', '1');
+      }).catch(function () {
+        body.innerHTML = '<p class="wallet-err">Could not prepare the wallet card. Please try again.</p>';
+      });
+    }
+    resetWalletFlyoutTimer();
+  }
+
   /** #/wallet handoff page — the phone lands here after scanning the QR. The
    *  `wt` in the URL authenticates (the phone has no session token), so we ask
    *  wallet_pass for the Google save URL and hand off to the wallet app. */
@@ -2008,6 +2054,13 @@
 
       // live persona — Claude interprets the card as it fills in
       '<div class="persona" id="personaPanel"><p class="persona-text" id="personaText">' + esc(personaDefaultText(isNew)) + '</p></div>' +
+      // wallet QR flyout — hidden; "Add to wallet" flips it into the persona
+      // space above, auto-dismissing after 10s of inactivity (existing users only)
+      (isNew ? '' :
+        '<div class="wallet-flyout" id="walletFlyout" hidden>' +
+        '<button class="wallet-flyout-close" type="button" data-action="wallet-hide" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
+        '<div class="wallet-flyout-body"><div class="wallet-loading"><span class="spin"></span> Preparing your card…</div></div>' +
+        '</div>') +
 
       '<div class="form-status" id="profileStatus"></div>' +
       // always visible: the consent row activates once the card is complete,
@@ -2017,7 +2070,9 @@
       (isNew
         ? '<label class="consent"><input type="checkbox" id="consentBox" disabled> I agree that this information is stored by the organizers and that my profile is shown publicly to the workshop’s mentors and participants.</label>'
         : '') +
-      '<div class="form-actions"><button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button></div>' +
+      '<div class="form-actions">' +
+      (isNew ? '' : '<button class="btn btn-outline" type="button" data-action="wallet-show"><i class="fa-solid fa-wallet"></i>Add to wallet</button>') +
+      '<button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button></div>' +
       '</div>' +
       '</div>' + // .pf-right
       '</form>';
@@ -2261,10 +2316,11 @@
         'Your account has no assigned role, so the platform is read-only for now.<br>' +
         'Contact an organizer to restore access — your profile and data are safe.</div>';
     }
-    if (!formReady()) return profileScaffold('Edit profile', '', formLoading());
+    if (!formReady()) return profileScaffold('', '', formLoading());
     setTimeout(afterProfileForm, 0);
-    // The Add-to-Wallet QR + button lives with the member card, on this screen.
-    return profileScaffold('Edit profile', '', profileForm(me(), false) + walletPanelHtml_());
+    // Add-to-Wallet is a button next to "Save changes"; tapping it flips a QR
+    // into the persona space (see showWalletFlyout) — no scrolling panel here.
+    return profileScaffold('', '', profileForm(me(), false));
   }
 
   function profileScaffold(title, sub, inner) {
@@ -3753,6 +3809,8 @@
       case 'user-menu': e.preventDefault(); openMenu('user'); break;
       case 'guest-menu': e.preventDefault(); openMenu('guest'); break;
       case 'menu-nav': closeMenu(); break; // let the anchor navigate
+      case 'wallet-show': showWalletFlyout(); break;
+      case 'wallet-hide': hideWalletFlyout(); break;
       case 'close-modal': closeModal(); break;
       case 'filter-skill': {
         var s = t.getAttribute('data-skill');
