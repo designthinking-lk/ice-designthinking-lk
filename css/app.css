@@ -1929,6 +1929,29 @@ html.is-mobile .site-credit { display: none; }
 .btn-wallet.is-soon { opacity: 0.5; cursor: default; pointer-events: none; }
 .btn-wallet-lg { padding: 14px 22px; font-size: 15.5px; }
 
+/* admin: team score control (in each team card header) */
+.tb-score { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); margin-left: auto; }
+.tb-score > i { color: var(--color-accent); }
+.tb-score-in { width: 58px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12px; }
+.tb-score-save { padding: 3px 9px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12px; cursor: pointer; }
+.tb-score-save:hover { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+.tb-score-save.loading { opacity: 0.6; pointer-events: none; }
+.tb-score-na { opacity: 0.5; }
+
+/* admin: wallet push tab */
+.wallet-admin { display: grid; grid-template-columns: minmax(320px, 1.2fr) 1fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .wallet-admin { grid-template-columns: 1fr; } }
+.wp-lead { margin: 4px 0 14px; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.wp-input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; resize: vertical; }
+.wp-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.wp-hint { color: var(--text-muted); font-size: 12px; }
+.wp-history .wp-item { padding: 11px 0; border-bottom: 1px solid var(--border); }
+.wp-history .wp-item:last-child { border-bottom: 0; }
+.wp-msg { color: var(--text-body); font-size: 14px; line-height: 1.45; }
+.wp-meta { margin-top: 4px; color: var(--text-muted); font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.wp-counts { display: inline-flex; align-items: center; gap: 4px; }
+.wp-counts i { margin-left: 6px; opacity: 0.8; }
+
 /* #/wallet handoff page */
 .wallet-view { max-width: 460px; margin: 8vh auto 0; padding: 0 20px; text-align: center; }
 .wallet-hero { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 34px 28px; box-shadow: var(--shadow-md); }

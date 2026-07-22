@@ -3366,12 +3366,14 @@
     var assigned = {}; // userId -> letter
     var counts = {};   // letter -> { participant, mentor }
     var teamOf = {};   // letter -> { mentors: [], participants: [] }
+    var teamRow = {};  // letter -> team object (for id + live score)
     TEAM_LETTERS.forEach(function (L) {
       counts[L] = { participant: 0, mentor: 0 };
       teamOf[L] = { mentor: [], participant: [] };
       var wanted = ('team ' + L).toLowerCase();
       (d.teams || []).forEach(function (t) {
         if (String(t.name || '').trim().toLowerCase() !== wanted) return;
+        teamRow[L] = t;
         (t.members || []).forEach(function (id) {
           var u = byId[id];
           if (!u) return;
@@ -3429,8 +3431,17 @@
         ? '<button class="tb-addhere" type="button" data-action="tb-add-here" data-team="' + L + '"' +
             ' title="Add the ' + selCount + ' selected here"><i class="fa-solid fa-plus"></i> Add Here</button>'
         : (full ? '<span class="tb-fulltag"><i class="fa-solid fa-circle-check"></i> Full</span>' : '');
+      var tr = teamRow[L];
+      var score = tr ? (Number(tr.score) || 0) : 0;
+      // Live team score — shown on every member's wallet card. Disabled until
+      // the team row exists (created on first assignment).
+      var scoreCtl = tr
+        ? '<span class="tb-score"><i class="fa-solid fa-trophy"></i>' +
+            '<input type="number" class="tb-score-in" value="' + score + '" data-team="' + esc(tr.id) + '" aria-label="Team ' + L + ' score">' +
+            '<button class="tb-score-save" type="button" data-action="save-score" data-team="' + esc(tr.id) + '" title="Save score">Save</button></span>'
+        : '<span class="tb-score tb-score-na" title="Assign members first"><i class="fa-solid fa-trophy"></i>—</span>';
       return '<div class="tb-card' + (full ? ' tb-full' : '') + (canFit ? ' tb-target' : '') + '">' +
-        '<div class="tb-head"><h3>Team ' + L + '</h3>' + headExtra +
+        '<div class="tb-head"><h3>Team ' + L + '</h3>' + scoreCtl + headExtra +
         '</div><div class="tb-slots">' + slots + '</div></div>';
     }).join('');
 
@@ -3496,6 +3507,42 @@
       '</div></div>';
   }
 
+  // ---- Wallet push (admin broadcast to installed wallet cards) ----
+  var walletPushHist = null; // null = not loaded yet; [] = loaded, empty
+
+  function adminWalletSection(d) {
+    if (walletPushHist === null) {
+      A.api('wallet_push_history', {}).then(function (r) {
+        walletPushHist = r.pushes || [];
+        if (location.hash === '#/admin' && adminTab === 'wallet') route();
+      }).catch(function () { walletPushHist = []; });
+    }
+    var loading = walletPushHist === null;
+    var hist = walletPushHist || [];
+    var histHtml = loading
+      ? '<div class="skeleton" style="height:56px;margin-bottom:8px"></div><div class="skeleton" style="height:56px"></div>'
+      : (hist.length
+        ? hist.map(function (p) {
+            var counts = (p.googleCount || p.appleCount)
+              ? '<span class="wp-counts"><i class="fa-brands fa-google-wallet"></i>' + (p.googleCount || 0) +
+                '<i class="fa-brands fa-apple"></i>' + (p.appleCount || 0) + '</span>' : '';
+            return '<div class="wp-item"><div class="wp-msg">' + esc(p.message) + '</div>' +
+              '<div class="wp-meta">' + esc(p.sentBy || '') + ' · ' + esc(timeAgo(p.sentAt)) + counts + '</div></div>';
+          }).join('')
+        : '<div class="empty" style="margin:0"><i class="fa-regular fa-paper-plane"></i>No broadcasts yet.</div>');
+    return '<div class="wallet-admin">' +
+      '<div class="panel wp-compose">' +
+        '<h3><i class="fa-solid fa-bullhorn"></i>Send a wallet notification</h3>' +
+        '<p class="wp-lead">Pushes to every member’s installed card (Google&nbsp;+&nbsp;Apple) and updates the card’s <b>LATEST</b> line. Logged in the history below.</p>' +
+        '<textarea id="wpInput" class="wp-input" maxlength="200" rows="3" placeholder="e.g. Lunch is served in the atrium — sessions resume at 1:30"></textarea>' +
+        '<div class="wp-actions"><span class="wp-hint">Shown on the card and as a push notification.</span>' +
+          '<button class="btn btn-gradient btn-sm" data-action="wallet-push-send"><i class="fa-solid fa-paper-plane"></i><span class="label">Send push</span><span class="spin"></span></button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="panel wp-history"><h3><i class="fa-solid fa-clock-rotate-left"></i>History</h3>' + histHtml + '</div>' +
+    '</div>';
+  }
+
   // Which admin tab is showing; the last-used tab is remembered per project so
   // returning to Admin reopens the view you left. (Storage links live inside
   // each project row — no separate Resources tab.)
@@ -3516,6 +3563,7 @@
     var users = (d.users || []);
     var tabs = [{ id: 'people', label: 'People (' + users.length + ')' }];
     tabs.push({ id: 'teams', label: 'Teams' });
+    tabs.push({ id: 'wallet', label: 'Wallet push' });
     if (d.registryUrl) tabs.push({ id: 'projects', label: 'Projects' });
     tabs.push({ id: 'event', label: 'Event' });
     if (!tabs.some(function (t) { return t.id === adminTab; })) adminTab = 'people';
@@ -3524,6 +3572,7 @@
     }).join('') + '</div>';
     var body =
       adminTab === 'teams' ? adminTeamsSection(d) :
+      adminTab === 'wallet' ? adminWalletSection(d) :
       adminTab === 'projects' ? projectsPanel(d) :
       adminTab === 'event' ? adminEventSection(d) :
       adminPeopleSection(d);
@@ -3760,6 +3809,36 @@
         } catch (err) { toast(err.message, true); }
         busy(t, false);
         renderChatPane();
+        break;
+      }
+      case 'save-score': {
+        var stid = t.getAttribute('data-team');
+        var sin = document.querySelector('.tb-score-in[data-team="' + stid + '"]');
+        var sval = sin ? sin.value : '';
+        busy(t, true);
+        try {
+          var sr = await A.api('admin_set_score', { teamId: stid, score: sval });
+          if (sr.team) {
+            (state.data.teams || []).forEach(function (x, i) { if (x.id === stid) state.data.teams[i] = sr.team; });
+            A.writeCache(state.data);
+          }
+          toast('Team score saved — cards refresh within ~5 min');
+        } catch (err) { toast(err.message, true); }
+        busy(t, false);
+        break;
+      }
+      case 'wallet-push-send': {
+        var wi = $('#wpInput');
+        var wmsg = wi ? wi.value.trim() : '';
+        if (!wmsg) { toast('Type a message first', true); break; }
+        busy(t, true);
+        try {
+          var wr = await A.api('admin_wallet_push', { message: wmsg });
+          if (wi) wi.value = '';
+          walletPushHist = null; // force history reload on re-render
+          route();
+          toast('Pushed to wallets · Google ' + (wr.googleCount || 0) + ' · Apple ' + (wr.appleCount || 0));
+        } catch (err) { toast(err.message, true); busy(t, false); }
         break;
       }
       case 'toggle-theme': {
