@@ -59,9 +59,9 @@ button { font-family: inherit; }
    avatar's own height; it is allowed to slide over the night-mode toggle. */
 .topbar { position: relative; }
 .menu-pop {
-  position: absolute; top: 50%; right: 64px; z-index: 70; /* right edge just left of the 32px avatar */
+  position: absolute; top: 50%; right: 70px; z-index: 70; /* right edge just left of the 38px avatar */
   display: flex; flex-direction: row-reverse; align-items: center; gap: 8px;
-  height: 32px; transform: translateY(-50%);
+  height: 38px; transform: translateY(-50%);
   animation: menu-strip-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .menu-pop[hidden] { display: none; }
@@ -72,8 +72,8 @@ button { font-family: inherit; }
 }
 @media (prefers-reduced-motion: reduce) { .menu-pop { animation: none; } }
 .menu-item {
-  display: inline-flex; align-items: center; gap: 7px; height: 32px;
-  padding: 0 14px; border-radius: 999px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px; height: 38px;
+  padding: 0 16px; border-radius: 999px; white-space: nowrap;
   font: inherit; font-size: 13px; font-weight: 600; color: var(--text);
   background: var(--surface); border: 1px solid var(--border);
   box-shadow: var(--shadow-md); cursor: pointer; text-decoration: none;
@@ -198,11 +198,14 @@ button { font-family: inherit; }
 }
 .avatar-circle-btn .avatar { transition: box-shadow 0.15s; }
 .avatar-circle-btn:hover .avatar { box-shadow: 0 0 0 3px rgba(97, 0, 255, 0.18); }
+/* size the profile avatar to match the 38px night-mode toggle beside it */
+.avatar-circle-btn .avatar { width: 38px; height: 38px; }
+.avatar-circle-btn .avatar-fallback { font-size: 15px; }
 .avatar-guest {
   display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 38px; height: 38px; border-radius: 50%;
   background: var(--bg-subtle); border: 1px solid var(--border);
-  color: var(--text-muted); font-size: 15px;
+  color: var(--text-muted); font-size: 17px;
 }
 
 /* ----------------------------------------------------------------- buttons */
@@ -1376,7 +1379,16 @@ body.chat-open .chat-fab { display: none; }
 }
 /* count / legend / tagline share the team chips' exact type: 13px / 600 */
 .topbar-count { font-size: 13px; font-weight: 600; color: var(--text-body); white-space: nowrap; }
-.topbar-tag { font-size: 13px; font-weight: 600; color: var(--text-body); white-space: nowrap; }
+.topbar-tag {
+  font-size: 13px; font-weight: 600; color: var(--text-body); white-space: nowrap;
+  /* frosted band behind the tagline, matching the app bar (.shell::before) so
+     the long line stays legible over the content scrolling beneath it */
+  padding: 7px 15px; border-radius: 999px;
+  background: rgba(244, 247, 249, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+}
+:root[data-theme="dark"] .topbar-tag { background: rgba(18, 19, 22, 0.5); }
 /* the tense word (to be / being / were) rides the sentence at the same size,
    set apart only by the brand accent so the shift in tense catches the eye */
 .tense { color: var(--color-accent-light); font-weight: 700; }

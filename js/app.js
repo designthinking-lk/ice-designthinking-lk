@@ -2102,7 +2102,7 @@
       (isNew ? '' :
         '<div class="wallet-flyout" id="walletFlyout" hidden>' +
         '<button class="wallet-flyout-close" type="button" data-action="wallet-hide" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
-        '<div class="wallet-flyout-body"><div class="wallet-loading"><span class="spin"></span> Preparing your card…</div></div>' +
+        '<div class="wallet-flyout-body"><div class="wallet-loading"><span class="spin"></span></div></div>' +
         '</div>') +
 
       '<div class="form-status" id="profileStatus"></div>' +
