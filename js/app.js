@@ -2757,6 +2757,8 @@
     var stage = $('#projStage');
     if (stage && projSel != null) {
       stage.innerHTML = projectPanelHtml(projSel);
+      var panel = stage.querySelector('.proj-panel');
+      if (panel) panel.style.animation = 'none'; // in-place update: don't replay the open pop
       if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
     }
   }
