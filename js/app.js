@@ -1359,6 +1359,8 @@
   }
   function resetWalletFlyoutTimer() {
     clearWalletFlyoutTimer();
+    var passes = $('#faPasses');
+    if (passes && !passes.hidden) return; // choosing a wallet — no auto-close
     walletFlyoutTimer = setTimeout(hideWalletFlyout, 10000);
   }
   function hideWalletFlyout() {
@@ -1366,6 +1368,36 @@
     var fly = $('#walletFlyout'), persona = $('#personaPanel');
     if (fly) fly.hidden = true;
     if (persona) persona.hidden = false;
+    restoreWalletButtons();
+  }
+  /** Restore the Save/Add-to-wallet row and unfreeze the id card. */
+  function restoreWalletButtons() {
+    var btns = $('#faButtons'), passes = $('#faPasses'), left = $('.pf-left');
+    if (btns) btns.hidden = false;
+    if (passes) { passes.hidden = true; passes.innerHTML = ''; passes.removeAttribute('data-loaded'); }
+    if (left) left.classList.remove('pf-frozen');
+  }
+  /** "Add to wallet" (next to the QR) → swap the action row for Google/Apple
+   *  wallet buttons in place (no extra page), and freeze the card while choosing. */
+  function showWalletPasses() {
+    var btns = $('#faButtons'), passes = $('#faPasses'), left = $('.pf-left');
+    if (!passes) return;
+    clearWalletFlyoutTimer(); // stay open until they pick a wallet or close
+    if (btns) btns.hidden = true;
+    if (left) left.classList.add('pf-frozen');
+    passes.hidden = false;
+    passes.innerHTML = '<div class="wallet-loading"><span class="spin"></span> Preparing your card…</div>';
+    Promise.all([
+      A.api('wallet_pass', {}).then(function (r) { return r && r.url; }, function () { return null; }),
+      A.api('apple_pass_link', {}).then(function (r) { return r && r.url; }, function () { return null; })
+    ]).then(function (res) {
+      if ($('#faPasses') !== passes || passes.hidden) return; // closed meanwhile
+      var g = res[0], a = res[1];
+      var btnG = g ? '<a class="btn-wallet btn-wallet-google" href="' + esc(g) + '" target="_blank" rel="noopener"><i class="fa-brands fa-google-wallet"></i><span>Google Wallet</span></a>' : '';
+      var btnA = a ? '<a class="btn-wallet btn-wallet-apple" href="' + esc(a) + '" target="_blank" rel="noopener"><i class="fa-brands fa-apple"></i><span>Apple Wallet</span></a>' : '';
+      var order = isApplePlatform_() ? (btnA + btnG) : (btnG + btnA);
+      passes.innerHTML = order || '<p class="wallet-err">Could not prepare your card. Please try again.</p>';
+    });
   }
   function showWalletFlyout() {
     var fly = $('#walletFlyout'), persona = $('#personaPanel');
@@ -1387,8 +1419,8 @@
         body.innerHTML =
           '<div class="wallet-qr" id="walletQr"></div>' +
           '<div class="wallet-flyout-side">' +
-          '<p class="wallet-scan">Scan with your phone camera, or tap below on your phone:</p>' +
-          walletButtons_(r.url) + '</div>';
+          '<button class="btn-wallet btn-wallet-google" type="button" data-action="wallet-passes">' +
+          '<i class="fa-solid fa-wallet"></i><span>Add to wallet</span></button></div>';
         renderQr_($('#walletQr'), r.url);
         fly.setAttribute('data-loaded', '1');
       }).catch(function () {
@@ -2071,8 +2103,12 @@
         ? '<label class="consent"><input type="checkbox" id="consentBox" disabled> I agree that this information is stored by the organizers and that my profile is shown publicly to the workshop’s mentors and participants.</label>'
         : '') +
       '<div class="form-actions">' +
+      '<div class="fa-buttons" id="faButtons">' +
       (isNew ? '' : '<button class="btn btn-outline" type="button" data-action="wallet-show"><i class="fa-solid fa-wallet"></i>Add to wallet</button>') +
-      '<button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button></div>' +
+      '<button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button>' +
+      '</div>' +
+      (isNew ? '' : '<div class="fa-passes" id="faPasses" hidden></div>') +
+      '</div>' +
       '</div>' +
       '</div>' + // .pf-right
       '</form>';
@@ -3821,6 +3857,7 @@
       case 'menu-nav': closeMenu(); break; // let the anchor navigate
       case 'wallet-show': showWalletFlyout(); break;
       case 'wallet-hide': hideWalletFlyout(); break;
+      case 'wallet-passes': showWalletPasses(); break;
       case 'close-modal': closeModal(); break;
       case 'filter-skill': {
         var s = t.getAttribute('data-skill');

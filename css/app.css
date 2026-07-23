@@ -521,6 +521,8 @@ textarea.input { resize: vertical; min-height: 90px; }
 }
 /* no outer margins — the card defines the row's top and bottom edges */
 .pf-left .idcard-scene { margin: 0; }
+/* frozen while the user is choosing a wallet — no card interaction */
+.pf-left.pf-frozen { pointer-events: none; opacity: 0.5; filter: saturate(0.85); transition: opacity 0.2s ease; }
 .pf-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
 /* live persona — Claude's read of the card, refreshed as it fills in.
@@ -548,6 +550,10 @@ textarea.input { resize: vertical; min-height: 90px; }
 .consent:has(input:disabled) { opacity: 0.5; cursor: default; }
 .consent input:disabled { cursor: default; }
 .pf-right .form-actions { flex: none; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+/* the action row swaps between the default buttons and the Google/Apple
+   wallet buttons in the same space (no extra page) */
+.fa-buttons, .fa-passes { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fa-buttons[hidden], .fa-passes[hidden] { display: none; }
 .form-loading {
   display: flex; align-items: center; gap: 12px; color: var(--text-muted);
   padding: 60px 0; font-size: 15px;
