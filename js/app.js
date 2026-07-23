@@ -2653,19 +2653,142 @@
     { t: 'FinAccess', d: 'Everyday finance for the unbanked and underserved.' },
   ];
 
+  // ---- Projects: six cards backed by the team_projects tab. A card's owning
+  //      team is the team at the same sorted index (homeTeams()[slot]); only
+  //      that team's members (or an admin) may edit its title/description/colour.
+  var projSel = null;      // open slot (null = grid)
+  var projEdit = false;    // inline edit mode within the open panel
+  var projEditColor = '';  // pending colour while editing
+
+  function teamProjectsData() {
+    var tp = state.data && state.data.teamProjects;
+    if (tp && tp.length) return tp.slice().sort(function (a, b) { return a.slot - b.slot; });
+    return DEMO_PROJECTS.map(function (p, i) { return { slot: i, title: p.t, description: p.d, color: 'pc-' + (i + 1) }; });
+  }
+  function projectBySlot(slot) {
+    var found = null;
+    teamProjectsData().forEach(function (p) { if (p.slot === slot) found = p; });
+    return found;
+  }
+  function projectTeam(slot) { return homeTeams()[slot]; }
+  function projectMembers(slot) {
+    var team = projectTeam(slot);
+    if (!team || team.demo) return [];
+    return (team.members || []).map(userById).filter(Boolean);
+  }
+  function canEditProject(slot) {
+    if (!me()) return false;
+    if (state.data && state.data.isAdmin) return true;
+    var team = projectTeam(slot);
+    return !!(team && !team.demo && (team.members || []).indexOf(me().id) !== -1);
+  }
+  function projColorClass(p, slot) { return /^pc-[1-6]$/.test(p && p.color) ? p.color : ('pc-' + (slot + 1)); }
+  function teamLabel(slot) { var t = projectTeam(slot); return t ? t.name : 'Team ' + String.fromCharCode(65 + slot); }
+
+  function projectCardHtml(p) {
+    var slot = p.slot;
+    var stack = projectMembers(slot).slice(0, 6).map(function (m) { return avatar(m, 'avatar-sm'); }).join('');
+    return '<article class="project-card ' + projColorClass(p, slot) + '" data-action="proj-open" data-slot="' + slot + '" tabindex="0">' +
+      '<span class="pc-tag">Project</span>' +
+      '<span class="pc-team">' + esc(teamLabel(slot)) + '</span>' +
+      (canEditProject(slot) ? '<button class="pc-edit" type="button" data-action="proj-edit" data-slot="' + slot + '" title="Edit your team’s project"><i class="fa-solid fa-pen"></i></button>' : '') +
+      '<div class="pc-text"><h3>' + esc(p.title) + '</h3><p>' + esc(p.description) + '</p></div>' +
+      (stack ? '<div class="pc-members member-stack">' + stack + '</div>' : '') +
+      '</article>';
+  }
+
   function viewProjects() {
-    // public — like People. Each card credits its team (top-right chip).
-    var teams = homeTeams();
-    return '<div class="projects-wrap"><div class="projects-grid">' +
-      DEMO_PROJECTS.map(function (p, i) {
-        var team = teams[i % teams.length];
-        return '<article class="project-card pc-' + (i + 1) + '">' +
-          '<span class="pc-tag">Project</span>' +
-          '<span class="pc-team">' + esc(team ? team.name : 'Team ' + String.fromCharCode(65 + i)) + '</span>' +
-          '<h3>' + esc(p.t) + '</h3>' +
-          '<p>' + esc(p.d) + '</p>' +
-          '</article>';
-      }).join('') + '</div></div>';
+    projSel = null; projEdit = false; projEditColor = ''; // always render the grid state
+    return '<div class="projects-wrap"><div class="projects-grid" id="projectsGrid">' +
+      teamProjectsData().map(projectCardHtml).join('') +
+      '</div><div class="proj-stage" id="projStage" hidden></div></div>';
+  }
+
+  // The expanded panel (project view + inline edit) shown over the dimmed grid.
+  function projectPanelHtml(slot) {
+    var p = projectBySlot(slot);
+    if (!p) return '';
+    var canEdit = canEditProject(slot);
+    var editing = projEdit && canEdit;
+    var color = editing ? (projEditColor || projColorClass(p, slot)) : projColorClass(p, slot);
+    var members = projectMembers(slot);
+    var memberHtml = members.map(function (m) {
+      return '<a class="proj-member" href="#/profile/' + esc(m.id) + '" data-action="proj-nav" title="' + esc(m.name) + '">' +
+        avatar(m, 'avatar-sm') + '<span>' + esc(m.name) + '</span></a>';
+    }).join('');
+    var hero = editing
+      ? '<input class="proj-title-in" id="projTitleIn" maxlength="80" value="' + esc(p.title) + '" placeholder="Project title">' +
+        '<textarea class="proj-desc-in" id="projDescIn" maxlength="300" rows="3" placeholder="One-line description">' + esc(p.description) + '</textarea>'
+      : '<h2>' + esc(p.title) + '</h2><p>' + esc(p.description) + '</p>';
+    var colorPicker = editing
+      ? '<div class="proj-colors">' + [1, 2, 3, 4, 5, 6].map(function (n) {
+          var c = 'pc-' + n;
+          return '<button type="button" class="proj-swatch ' + c + (c === color ? ' on' : '') + '" data-action="proj-color" data-color="' + c + '" data-slot="' + slot + '" aria-label="Colour ' + n + '"></button>';
+        }).join('') + '</div>'
+      : '';
+    var actions = !canEdit ? '' : (editing
+      ? '<div class="proj-actions"><button class="btn btn-ghost" type="button" data-action="proj-cancel">Cancel</button>' +
+        '<button class="btn btn-gradient" type="button" data-action="proj-save" data-slot="' + slot + '"><span class="label">Save changes</span><span class="spin"></span></button></div>'
+      : '<div class="proj-actions"><button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button></div>');
+    return '<div class="proj-panel">' +
+      '<button class="proj-close" type="button" data-action="proj-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
+      '<div class="proj-hero ' + color + '">' +
+        '<span class="pc-tag">Project</span>' +
+        '<div class="proj-hero-text">' + hero + '</div>' + colorPicker +
+      '</div>' +
+      '<div class="proj-body">' +
+        '<div class="proj-members-head"><i class="fa-solid fa-user-group"></i>' + esc(teamLabel(slot)) + ' · ' + members.length + ' member' + (members.length === 1 ? '' : 's') + '</div>' +
+        (memberHtml ? '<div class="proj-members">' + memberHtml + '</div>' : '<p class="proj-empty">No members assigned to ' + esc(teamLabel(slot)) + ' yet.</p>') +
+        actions +
+      '</div>' +
+    '</div>';
+  }
+
+  function openProject(slot, edit) {
+    var grid = $('#projectsGrid'), stage = $('#projStage');
+    if (!grid || !stage) return;
+    projSel = slot; projEdit = !!edit; projEditColor = '';
+    grid.classList.add('pp-dim');
+    stage.hidden = false;
+    stage.innerHTML = projectPanelHtml(slot);
+    if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
+  }
+  function renderProjectPanel() {
+    var stage = $('#projStage');
+    if (stage && projSel != null) {
+      stage.innerHTML = projectPanelHtml(projSel);
+      if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
+    }
+  }
+  function closeProject() {
+    var grid = $('#projectsGrid'), stage = $('#projStage');
+    if (!stage) { projSel = null; return; }
+    var panel = stage.querySelector('.proj-panel');
+    if (panel) panel.classList.add('closing'); // fade the content out first
+    if (grid) grid.classList.remove('pp-dim');  // cards glide back to place
+    setTimeout(function () {
+      stage.hidden = true; stage.innerHTML = '';
+      projSel = null; projEdit = false; projEditColor = '';
+    }, 300);
+  }
+  function saveProject(slot, btn) {
+    var titleEl = $('#projTitleIn'), descEl = $('#projDescIn');
+    var title = titleEl ? titleEl.value : undefined;
+    if (title !== undefined && !title.trim()) { toast('Title cannot be empty.', true); return; }
+    busy(btn, true);
+    A.api('team_project_update', {
+      slot: slot,
+      title: title,
+      description: descEl ? descEl.value : undefined,
+      color: projEditColor || undefined,
+    }).then(function (r) {
+      if (r && r.teamProjects) { state.data.teamProjects = r.teamProjects; A.writeCache(state.data); }
+      projEdit = false; projEditColor = '';
+      renderProjectPanel();
+      var card = $('#projectsGrid .project-card[data-slot="' + slot + '"]');
+      if (card) { var tmp = document.createElement('div'); tmp.innerHTML = projectCardHtml(projectBySlot(slot)); if (tmp.firstChild) card.replaceWith(tmp.firstChild); }
+      toast('Project saved');
+    }).catch(function (err) { toast(err.message, true); busy(btn, false); });
   }
 
   function viewTools() {
@@ -3871,6 +3994,20 @@
       case 'menu-nav': closeMenu(); break; // let the anchor navigate
       case 'wallet-show': showWalletFlyout(); break;
       case 'wallet-hide': hideWalletFlyout(); break;
+      case 'proj-open': openProject(Number(t.getAttribute('data-slot')), false); break;
+      case 'proj-edit': e.preventDefault(); e.stopPropagation(); openProject(Number(t.getAttribute('data-slot')), true); break;
+      case 'proj-edit-inline': projEdit = true; projEditColor = ''; renderProjectPanel(); break;
+      case 'proj-color': {
+        projEditColor = t.getAttribute('data-color');
+        var ph = $('#projStage .proj-hero'); if (ph) ph.className = 'proj-hero ' + projEditColor;
+        var sw = $('#projStage') ? $('#projStage').querySelectorAll('.proj-swatch') : [];
+        Array.prototype.forEach.call(sw, function (s) { s.classList.toggle('on', s.getAttribute('data-color') === projEditColor); });
+        break;
+      }
+      case 'proj-cancel': projEdit = false; projEditColor = ''; renderProjectPanel(); break;
+      case 'proj-save': saveProject(Number(t.getAttribute('data-slot')), t); break;
+      case 'proj-close': closeProject(); break;
+      case 'proj-nav': closeProject(); break; // let the profile link navigate
       case 'close-modal': closeModal(); break;
       case 'filter-skill': {
         var s = t.getAttribute('data-skill');
