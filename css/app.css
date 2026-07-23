@@ -62,8 +62,10 @@ button { font-family: inherit; }
   position: absolute; top: 50%; right: 70px; z-index: 70; /* right edge just left of the 38px avatar */
   display: flex; flex-direction: row-reverse; align-items: center; gap: 4px;
   height: 38px; padding: 0 5px; transform: translateY(-50%);
-  /* one solid rounded bar so the options fully cover any app-bar text beneath */
-  border-radius: 999px; background: var(--surface);
+  /* one solid rounded bar so the options fully cover any app-bar text beneath.
+     min-width extends the bar leftward (options stay right, empty space fills
+     the rest) so it also hides the tagline/chips behind it */
+  min-width: 460px; border-radius: 999px; background: var(--surface);
   border: 1px solid var(--border); box-shadow: var(--shadow-md);
   animation: menu-strip-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }

@@ -2,14 +2,14 @@
  * Strategy: network-first for every same-origin GET (never stale while online),
  * cache fallback when offline. Bump VERSION together with the ?v= asset bumps
  * in index.html so old caches are dropped on deploy. */
-var VERSION = 'v85';
+var VERSION = 'v86';
 var CACHE = 'ice-' + VERSION;
 
 var SHELL = [
   './',
   'index.html',
   'css/theme.css?v=51',
-  'css/app.css?v=87',
+  'css/app.css?v=88',
   'assets/favicon.svg',
   'assets/icon-192.png',
   'assets/icon-512.png',
