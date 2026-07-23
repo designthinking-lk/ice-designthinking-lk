@@ -22,7 +22,10 @@ button { font-family: inherit; }
 /* ------------------------------------------------------------------- shell */
 .shell { display: flex; height: 100vh; }
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.view { flex: 1; min-width: 0; overflow-y: auto; padding: 24px 32px; position: relative; }
+/* scrollbar-gutter: stable reserves the scrollbar's space even when no
+   scrollbar is shown, so content never shifts left when a view grows tall
+   enough to scroll (e.g. the #/me wallet QR) */
+.view { flex: 1; min-width: 0; overflow-y: auto; scrollbar-gutter: stable; padding: 24px 32px; position: relative; }
 
 /* -------------------------------------------------------------------- topbar */
 .topbar {

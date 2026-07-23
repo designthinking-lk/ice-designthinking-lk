@@ -1359,8 +1359,6 @@
   }
   function resetWalletFlyoutTimer() {
     clearWalletFlyoutTimer();
-    var passes = $('#faPasses');
-    if (passes && !passes.hidden) return; // choosing a wallet — no auto-close
     walletFlyoutTimer = setTimeout(hideWalletFlyout, 10000);
   }
   function hideWalletFlyout() {
@@ -1374,15 +1372,23 @@
   function restoreWalletButtons() {
     var btns = $('#faButtons'), passes = $('#faPasses'), left = $('.pf-left');
     if (btns) btns.hidden = false;
-    if (passes) { passes.hidden = true; passes.innerHTML = ''; passes.removeAttribute('data-loaded'); }
+    if (passes) { passes.hidden = true; passes.innerHTML = ''; }
     if (left) left.classList.remove('pf-frozen');
   }
-  /** "Add to wallet" (next to the QR) → swap the action row for Google/Apple
-   *  wallet buttons in place (no extra page), and freeze the card while choosing. */
+  // Reset the inactivity timer on any interaction across the wallet UI (the QR
+  // flyout AND the Google/Apple button row, which live in different columns).
+  function wireWalletActivity(el) {
+    if (!el || el._wwired) return;
+    el._wwired = true;
+    ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (ev) {
+      el.addEventListener(ev, resetWalletFlyoutTimer, { passive: true });
+    });
+  }
+  /** Swap the action row for Google/Apple wallet buttons in place (no extra
+   *  page) and freeze the card. Runs automatically while the QR is shown. */
   function showWalletPasses() {
     var btns = $('#faButtons'), passes = $('#faPasses'), left = $('.pf-left');
     if (!passes) return;
-    clearWalletFlyoutTimer(); // stay open until they pick a wallet or close
     if (btns) btns.hidden = true;
     if (left) left.classList.add('pf-frozen');
     passes.hidden = false;
@@ -1404,29 +1410,22 @@
     if (!fly) return;
     if (persona) persona.hidden = true;
     fly.hidden = false;
-    // reset the inactivity timer on any interaction inside the flyout
-    if (!fly._wired) {
-      fly._wired = true;
-      ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (ev) {
-        fly.addEventListener(ev, resetWalletFlyoutTimer, { passive: true });
-      });
-    }
+    wireWalletActivity(fly);
+    wireWalletActivity($('.form-actions'));
     // mint + render the QR once, then reuse
     if (!fly.getAttribute('data-loaded')) {
       var body = fly.querySelector('.wallet-flyout-body');
       A.api('wallet_link', {}).then(function (r) {
         if (!r || !r.url) throw new Error('no url');
-        body.innerHTML =
-          '<div class="wallet-qr" id="walletQr"></div>' +
-          '<div class="wallet-flyout-side">' +
-          '<button class="btn-wallet btn-wallet-google" type="button" data-action="wallet-passes">' +
-          '<i class="fa-solid fa-wallet"></i><span>Add to wallet</span></button></div>';
+        body.innerHTML = '<div class="wallet-qr" id="walletQr"></div>';
         renderQr_($('#walletQr'), r.url);
         fly.setAttribute('data-loaded', '1');
       }).catch(function () {
         body.innerHTML = '<p class="wallet-err">Could not prepare the wallet card. Please try again.</p>';
       });
     }
+    // auto: load the Google/Apple buttons + freeze the card as the QR appears
+    showWalletPasses();
     resetWalletFlyoutTimer();
   }
 
@@ -3857,7 +3856,6 @@
       case 'menu-nav': closeMenu(); break; // let the anchor navigate
       case 'wallet-show': showWalletFlyout(); break;
       case 'wallet-hide': hideWalletFlyout(); break;
-      case 'wallet-passes': showWalletPasses(); break;
       case 'close-modal': closeModal(); break;
       case 'filter-skill': {
         var s = t.getAttribute('data-skill');
