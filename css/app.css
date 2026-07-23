@@ -568,6 +568,11 @@ textarea.input { resize: vertical; min-height: 90px; }
    wallet buttons in the same space (no extra page) */
 .fa-buttons, .fa-passes { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .fa-buttons[hidden], .fa-passes[hidden] { display: none; }
+/* the two wallet buttons split the row equally; fixed height keeps the row the
+   same size as the loading skeletons, so the QR above never shifts */
+.fa-passes { min-height: 44px; }
+.fa-passes .btn-wallet, .fa-passes .wallet-skel-btn { flex: 1 1 0; height: 44px; min-width: 0; }
+.fa-passes .btn-wallet { padding-top: 0; padding-bottom: 0; }
 .form-loading {
   display: flex; align-items: center; gap: 12px; color: var(--text-muted);
   padding: 60px 0; font-size: 15px;
@@ -1982,10 +1987,14 @@ html.is-mobile.is-wallet .btn-wallet { width: 100%; box-sizing: border-box; }
 
 /* Add-to-Wallet flyout — occupies the persona space on #/me while shown */
 .wallet-flyout {
-  flex: 1; position: relative; display: flex; align-items: center;
-  gap: 18px; flex-wrap: wrap; padding: 8px 36px 4px 2px; box-sizing: border-box;
+  flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
+  gap: 18px; flex-wrap: wrap; padding: 8px 8px 4px; box-sizing: border-box;
   animation: wallet-flyout-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* skeletons: same footprint as the QR / buttons they replace, so nothing jumps */
+.wallet-skel { background: linear-gradient(100deg, var(--bg-subtle) 40%, #fff 50%, var(--bg-subtle) 60%); background-size: 200% 100%; animation: shim 1.2s infinite; }
+.wallet-skel-qr { width: 210px; height: 210px; border-radius: var(--radius-md); }
+.wallet-skel-btn { border-radius: 999px; }
 .wallet-flyout[hidden] { display: none; }
 @keyframes wallet-flyout-in {
   from { opacity: 0; transform: translateX(14px); }
@@ -2010,10 +2019,9 @@ html.is-mobile.is-wallet .btn-wallet { width: 100%; box-sizing: border-box; }
   border: 1px solid transparent; cursor: pointer; text-decoration: none; white-space: nowrap;
 }
 .btn-wallet i { font-size: 18px; }
-.btn-wallet .gw-ic { display: block; flex: none; }
-.btn-wallet-google { background: #202124; color: #fff; }
-.btn-wallet-google:hover { background: #000; color: #fff; }
-.btn-wallet-apple { background: #000; color: #fff; }
+/* Google and Apple share one look + hover so they feel like a matched pair */
+.btn-wallet-google, .btn-wallet-apple { background: #000; color: #fff; }
+.btn-wallet-google:hover, .btn-wallet-apple:hover { background: #1c1c1e; color: #fff; }
 .btn-wallet.is-soon { opacity: 0.5; cursor: default; pointer-events: none; }
 .btn-wallet-lg { padding: 14px 22px; font-size: 15.5px; }
 

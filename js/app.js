@@ -1311,17 +1311,6 @@
       '</div>';
   }
 
-  /** Official Google Wallet mark (four-colour fanned cards) as inline SVG —
-   *  Font Awesome only ships a flat monochrome glyph. */
-  function googleWalletIcon_() {
-    return '<svg class="gw-ic" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false">' +
-      '<rect x="6" y="4" width="9" height="15" rx="2.6" fill="#34A853" transform="rotate(24 10.5 11.5)"/>' +
-      '<rect x="6" y="4" width="9" height="15" rx="2.6" fill="#FBBC05" transform="rotate(16 10.5 11.5)"/>' +
-      '<rect x="6" y="4" width="9" height="15" rx="2.6" fill="#EA4335" transform="rotate(8 10.5 11.5)"/>' +
-      '<rect x="6" y="4" width="9" height="15" rx="2.6" fill="#4285F4"/>' +
-      '</svg>';
-  }
-
   function renderQr_(el, text) {
     try {
       var qr = qrcode(0, 'M');
@@ -1403,14 +1392,14 @@
     if (btns) btns.hidden = true;
     if (left) left.classList.add('pf-frozen');
     passes.hidden = false;
-    passes.innerHTML = '<div class="wallet-loading"><span class="spin"></span> Preparing your card…</div>';
+    passes.innerHTML = '<div class="wallet-skel wallet-skel-btn"></div><div class="wallet-skel wallet-skel-btn"></div>';
     Promise.all([
       A.api('wallet_pass', {}).then(function (r) { return r && r.url; }, function () { return null; }),
       A.api('apple_pass_link', {}).then(function (r) { return r && r.url; }, function () { return null; })
     ]).then(function (res) {
       if ($('#faPasses') !== passes || passes.hidden) return; // closed meanwhile
       var g = res[0], a = res[1];
-      var btnG = g ? '<a class="btn-wallet btn-wallet-google" href="' + esc(g) + '" target="_blank" rel="noopener">' + googleWalletIcon_() + '<span>Google Wallet</span></a>' : '';
+      var btnG = g ? '<a class="btn-wallet btn-wallet-google" href="' + esc(g) + '" target="_blank" rel="noopener"><i class="fa-brands fa-google-wallet"></i><span>Google Wallet</span></a>' : '';
       var btnA = a ? '<a class="btn-wallet btn-wallet-apple" href="' + esc(a) + '" target="_blank" rel="noopener"><i class="fa-brands fa-apple"></i><span>Apple Wallet</span></a>' : '';
       var order = isApplePlatform_() ? (btnA + btnG) : (btnG + btnA);
       passes.innerHTML = order || '<p class="wallet-err">Could not prepare your card. Please try again.</p>';
@@ -1472,7 +1461,7 @@
     Promise.all(jobs).then(function (rs) {
       var g = null, a = null;
       rs.forEach(function (x) { if (x.google) g = x.google; if (x.apple) a = x.apple; });
-      var btnG = g ? '<a class="btn-wallet btn-wallet-google btn-wallet-lg" href="' + esc(g) + '">' + googleWalletIcon_() + '<span>Add to Google Wallet</span></a>' : '';
+      var btnG = g ? '<a class="btn-wallet btn-wallet-google btn-wallet-lg" href="' + esc(g) + '"><i class="fa-brands fa-google-wallet"></i><span>Add to Google Wallet</span></a>' : '';
       var btnA = a ? '<a class="btn-wallet btn-wallet-apple btn-wallet-lg" href="' + esc(a) + '"><i class="fa-brands fa-apple"></i><span>Add to Apple Wallet</span></a>' : '';
       var apple = isApplePlatform_();
       // On Apple devices lead with the Apple button. Keep both as a fallback.
@@ -2113,7 +2102,7 @@
       (isNew ? '' :
         '<div class="wallet-flyout" id="walletFlyout" hidden>' +
         '<button class="wallet-flyout-close" type="button" data-action="wallet-hide" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
-        '<div class="wallet-flyout-body"><div class="wallet-loading"><span class="spin"></span></div></div>' +
+        '<div class="wallet-flyout-body"><div class="wallet-skel wallet-skel-qr"></div></div>' +
         '</div>') +
 
       '<div class="form-status" id="profileStatus"></div>' +
