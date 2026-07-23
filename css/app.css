@@ -566,13 +566,8 @@ textarea.input { resize: vertical; min-height: 90px; }
 .pf-right .form-actions { flex: none; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 /* the action row swaps between the default buttons and the Google/Apple
    wallet buttons in the same space (no extra page) */
-.fa-buttons, .fa-passes { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.fa-buttons[hidden], .fa-passes[hidden] { display: none; }
-/* the two wallet buttons split the row equally; fixed height keeps the row the
-   same size as the loading skeletons, so the QR above never shifts */
-.fa-passes { min-height: 44px; }
-.fa-passes .btn-wallet, .fa-passes .wallet-skel-btn { flex: 1 1 0; height: 44px; min-width: 0; }
-.fa-passes .btn-wallet { padding-top: 0; padding-bottom: 0; }
+.fa-buttons { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fa-buttons[hidden] { display: none; }
 .form-loading {
   display: flex; align-items: center; gap: 12px; color: var(--text-muted);
   padding: 60px 0; font-size: 15px;
@@ -1991,6 +1986,16 @@ html.is-mobile.is-wallet .btn-wallet { width: 100%; box-sizing: border-box; }
   gap: 18px; flex-wrap: wrap; padding: 8px 8px 4px; box-sizing: border-box;
   animation: wallet-flyout-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* QR + wallet buttons as one outlined block, everything centred on the same axis */
+.wallet-block {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 18px; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.wallet-block-qr { line-height: 0; }
+.wallet-block-passes { display: flex; gap: 12px; width: 100%; min-height: 44px; }
+.wallet-block-passes .btn-wallet, .wallet-block-passes .wallet-skel-btn { flex: 1 1 0; height: 44px; min-width: 0; padding-top: 0; padding-bottom: 0; }
 /* skeletons: same footprint as the QR / buttons they replace, so nothing jumps */
 .wallet-skel { background: linear-gradient(100deg, var(--bg-subtle) 40%, #fff 50%, var(--bg-subtle) 60%); background-size: 200% 100%; animation: shim 1.2s infinite; }
 .wallet-skel-qr { width: 210px; height: 210px; border-radius: var(--radius-md); }
@@ -2003,7 +2008,7 @@ html.is-mobile.is-wallet .btn-wallet { width: 100%; box-sizing: border-box; }
 .wallet-flyout-body { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .wallet-flyout-side { flex: 1 1 160px; min-width: 150px; }
 .wallet-flyout-close {
-  position: absolute; top: -4px; right: 0; z-index: 2;
+  position: absolute; top: -11px; right: -11px; z-index: 2;
   width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: var(--surface); border: 1px solid var(--border);

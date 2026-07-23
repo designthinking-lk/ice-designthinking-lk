@@ -1370,13 +1370,11 @@
   }
   /** Restore the Save/Add-to-wallet row and unfreeze the id card. */
   function restoreWalletButtons() {
-    var btns = $('#faButtons'), passes = $('#faPasses'), left = $('.pf-left');
+    var btns = $('#faButtons'), left = $('.pf-left');
     if (btns) btns.hidden = false;
-    if (passes) { passes.hidden = true; passes.innerHTML = ''; }
     if (left) left.classList.remove('pf-frozen');
   }
-  // Reset the inactivity timer on any interaction across the wallet UI (the QR
-  // flyout AND the Google/Apple button row, which live in different columns).
+  // Reset the inactivity timer on any interaction inside the wallet block.
   function wireWalletActivity(el) {
     if (!el || el._wwired) return;
     el._wwired = true;
@@ -1384,20 +1382,15 @@
       el.addEventListener(ev, resetWalletFlyoutTimer, { passive: true });
     });
   }
-  /** Swap the action row for Google/Apple wallet buttons in place (no extra
-   *  page) and freeze the card. Runs automatically while the QR is shown. */
-  function showWalletPasses() {
-    var btns = $('#faButtons'), passes = $('#faPasses'), left = $('.pf-left');
+  /** Fetch the Google/Apple save URLs and render them under the QR (same block). */
+  function loadWalletPasses() {
+    var passes = $('#walletPasses');
     if (!passes) return;
-    if (btns) btns.hidden = true;
-    if (left) left.classList.add('pf-frozen');
-    passes.hidden = false;
-    passes.innerHTML = '<div class="wallet-skel wallet-skel-btn"></div><div class="wallet-skel wallet-skel-btn"></div>';
     Promise.all([
       A.api('wallet_pass', {}).then(function (r) { return r && r.url; }, function () { return null; }),
       A.api('apple_pass_link', {}).then(function (r) { return r && r.url; }, function () { return null; })
     ]).then(function (res) {
-      if ($('#faPasses') !== passes || passes.hidden) return; // closed meanwhile
+      if ($('#walletPasses') !== passes) return; // re-rendered meanwhile
       var g = res[0], a = res[1];
       var btnG = g ? '<a class="btn-wallet btn-wallet-google" href="' + esc(g) + '" target="_blank" rel="noopener"><i class="fa-brands fa-google-wallet"></i><span>Google Wallet</span></a>' : '';
       var btnA = a ? '<a class="btn-wallet btn-wallet-apple" href="' + esc(a) + '" target="_blank" rel="noopener"><i class="fa-brands fa-apple"></i><span>Apple Wallet</span></a>' : '';
@@ -1411,21 +1404,23 @@
     if (persona) persona.hidden = true;
     fly.hidden = false;
     wireWalletActivity(fly);
-    wireWalletActivity($('.form-actions'));
-    // mint + render the QR once, then reuse
+    // hide the Save row + freeze the card while the wallet block is up
+    var btns = $('#faButtons'), left = $('.pf-left');
+    if (btns) btns.hidden = true;
+    if (left) left.classList.add('pf-frozen');
+    // mint the QR + wallet links once, then reuse
     if (!fly.getAttribute('data-loaded')) {
-      var body = fly.querySelector('.wallet-flyout-body');
+      fly.setAttribute('data-loaded', '1');
       A.api('wallet_link', {}).then(function (r) {
         if (!r || !r.url) throw new Error('no url');
-        body.innerHTML = '<div class="wallet-qr" id="walletQr"></div>';
-        renderQr_($('#walletQr'), r.url);
-        fly.setAttribute('data-loaded', '1');
+        var slot = $('#walletQrSlot');
+        if (slot) { slot.innerHTML = '<div class="wallet-qr" id="walletQr"></div>'; renderQr_($('#walletQr'), r.url); }
       }).catch(function () {
-        body.innerHTML = '<p class="wallet-err">Could not prepare the wallet card. Please try again.</p>';
+        var slot = $('#walletQrSlot');
+        if (slot) slot.innerHTML = '<p class="wallet-err">Could not prepare the QR.</p>';
       });
+      loadWalletPasses();
     }
-    // auto: load the Google/Apple buttons + freeze the card as the QR appears
-    showWalletPasses();
     resetWalletFlyoutTimer();
   }
 
@@ -2101,8 +2096,11 @@
       // space above, auto-dismissing after 10s of inactivity (existing users only)
       (isNew ? '' :
         '<div class="wallet-flyout" id="walletFlyout" hidden>' +
+        '<div class="wallet-block">' +
         '<button class="wallet-flyout-close" type="button" data-action="wallet-hide" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
-        '<div class="wallet-flyout-body"><div class="wallet-skel wallet-skel-qr"></div></div>' +
+        '<div class="wallet-block-qr" id="walletQrSlot"><div class="wallet-skel wallet-skel-qr"></div></div>' +
+        '<div class="wallet-block-passes" id="walletPasses"><div class="wallet-skel wallet-skel-btn"></div><div class="wallet-skel wallet-skel-btn"></div></div>' +
+        '</div>' +
         '</div>') +
 
       '<div class="form-status" id="profileStatus"></div>' +
@@ -2118,7 +2116,6 @@
       (isNew ? '' : '<button class="btn btn-outline" type="button" data-action="wallet-show"><i class="fa-solid fa-wallet"></i>Add to wallet</button>') +
       '<button class="btn btn-gradient" type="submit"><span class="label">' + (isNew ? 'Let’s build something amazing' : 'Save changes') + '</span><span class="spin"></span></button>' +
       '</div>' +
-      (isNew ? '' : '<div class="fa-passes" id="faPasses" hidden></div>') +
       '</div>' +
       '</div>' +
       '</div>' + // .pf-right
