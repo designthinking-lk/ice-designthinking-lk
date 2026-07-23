@@ -60,8 +60,11 @@ button { font-family: inherit; }
 .topbar { position: relative; }
 .menu-pop {
   position: absolute; top: 50%; right: 70px; z-index: 70; /* right edge just left of the 38px avatar */
-  display: flex; flex-direction: row-reverse; align-items: center; gap: 8px;
-  height: 38px; transform: translateY(-50%);
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 4px;
+  height: 38px; padding: 0 5px; transform: translateY(-50%);
+  /* one solid rounded bar so the options fully cover any app-bar text beneath */
+  border-radius: 999px; background: var(--surface);
+  border: 1px solid var(--border); box-shadow: var(--shadow-md);
   animation: menu-strip-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .menu-pop[hidden] { display: none; }
@@ -72,16 +75,15 @@ button { font-family: inherit; }
 }
 @media (prefers-reduced-motion: reduce) { .menu-pop { animation: none; } }
 .menu-item {
-  display: inline-flex; align-items: center; gap: 7px; height: 38px;
-  padding: 0 16px; border-radius: 999px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px; height: 30px;
+  padding: 0 12px; border-radius: 999px; white-space: nowrap;
   font: inherit; font-size: 13px; font-weight: 600; color: var(--text);
-  background: var(--surface); border: 1px solid var(--border);
-  box-shadow: var(--shadow-md); cursor: pointer; text-decoration: none;
-  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+  background: none; border: none; cursor: pointer; text-decoration: none;
+  transition: background 0.15s, color 0.15s;
 }
-.menu-item:hover { background: var(--bg-subtle); transform: translateY(-1px); }
+.menu-item:hover { background: var(--bg-subtle); }
 .menu-item i { font-size: 13px; color: var(--text-muted); }
-.menu-item.danger { color: #b3261e; border-color: rgba(179, 38, 30, 0.28); }
+.menu-item.danger { color: #b3261e; }
 .menu-item.danger i { color: inherit; }
 .menu-item.danger:hover { background: rgba(179, 38, 30, 0.08); }
 
@@ -2002,6 +2004,7 @@ html.is-mobile.is-wallet .btn-wallet { width: 100%; box-sizing: border-box; }
   border: 1px solid transparent; cursor: pointer; text-decoration: none; white-space: nowrap;
 }
 .btn-wallet i { font-size: 18px; }
+.btn-wallet .gw-ic { display: block; flex: none; }
 .btn-wallet-google { background: #202124; color: #fff; }
 .btn-wallet-google:hover { background: #000; color: #fff; }
 .btn-wallet-apple { background: #000; color: #fff; }
