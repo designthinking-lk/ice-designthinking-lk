@@ -2743,8 +2743,22 @@
     if (s && projSel != null) s.innerHTML = projMembersStripHtml(projSel);
   }
 
-  // Detail region (right of the stack): title + description + inline edit, with
-  // the actions pinned in a footer. Members live in the strip below the card.
+  // A Drive video plays from more than one host form; offer both as <source>s.
+  function projVideoSourcesHtml(url) {
+    var m = url.match(/\/d\/([^/?]+)/) || url.match(/[?&]id=([^&]+)/);
+    var id = m ? m[1] : '';
+    var list = id
+      ? ['https://lh3.googleusercontent.com/d/' + id, 'https://drive.google.com/uc?export=download&id=' + id]
+      : [url];
+    return list.map(function (s) { return '<source src="' + esc(s) + '">'; }).join('');
+  }
+  function projShowVideo(slot) {
+    var p = projectBySlot(slot);
+    return !!(p && p.video) && !(projEdit && canEditProject(slot));
+  }
+
+  // Detail region (right of the stack): a looping muted video background (when
+  // uploaded) with title + description + inline edit, actions pinned in a footer.
   function projectDetailHtml(slot) {
     var p = projectBySlot(slot);
     if (!p) return '';
@@ -2762,7 +2776,13 @@
         '<div class="proj-colors">' + [1, 2, 3, 4, 5, 6].map(function (n) {
           var c = 'pc-' + n;
           return '<button type="button" class="proj-swatch ' + c + (c === color ? ' on' : '') + '" data-action="proj-color" data-color="' + c + '" data-slot="' + slot + '" aria-label="Colour ' + n + '"></button>';
-        }).join('') + '</div>';
+        }).join('') + '</div>' +
+        '<label class="proj-lbl">Pitch video <span class="proj-lbl-hint">— your team’s clip, 30s max</span></label>' +
+        '<div class="proj-vid-row">' +
+          '<button class="btn btn-outline" type="button" data-action="proj-upload-video" data-slot="' + slot + '"><i class="fa-solid fa-video"></i>' + (p.video ? 'Replace video' : 'Upload video') + '</button>' +
+          (p.video ? '<span class="proj-vid-ok"><i class="fa-solid fa-circle-check"></i>Video added</span>' : '') +
+        '</div>' +
+        '<div class="proj-vid-status" id="projVideoStatus"></div>';
       footer =
         '<button class="btn btn-ghost" type="button" data-action="proj-cancel">Cancel</button>' +
         '<button class="btn btn-gradient" type="button" data-action="proj-save" data-slot="' + slot + '"><span class="label">Save changes</span><span class="spin"></span></button>';
@@ -2774,7 +2794,13 @@
         ? '<button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button>'
         : '';
     }
-    return '<button class="proj-close" type="button" data-action="proj-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
+    var videoBg = projShowVideo(slot)
+      ? '<video class="proj-d-video" autoplay muted loop playsinline preload="auto">' + projVideoSourcesHtml(p.video) + '</video>' +
+        '<div class="proj-d-scrim"></div>' +
+        '<button class="proj-video-audio" type="button" data-action="proj-video-mute" title="Unmute"><i class="fa-solid fa-volume-xmark"></i></button>'
+      : '';
+    return videoBg +
+      '<button class="proj-close" type="button" data-action="proj-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
       '<div class="proj-d-inner">' + inner + '</div>' +
       (footer ? '<div class="proj-d-footer">' + footer + '</div>' : '');
   }
@@ -2823,6 +2849,7 @@
     if (multiCol) { detail.style.left = (cards[1].offsetLeft + 40) + 'px'; detail.style.top = '0'; }
     else { detail.style.left = '0'; detail.style.top = (fT + cards[0].offsetHeight + 26) + 'px'; }
     detail.hidden = false;
+    detail.classList.toggle('has-video', projShowVideo(slot));
     detail.innerHTML = projectDetailHtml(slot);
     // member circles below the stacked card (left column)
     var strip = $('#projMembersStrip');
@@ -2874,6 +2901,7 @@
   function renderProjectDetail() {
     var detail = $('#projDetail');
     if (detail && projSel != null) {
+      detail.classList.toggle('has-video', projShowVideo(projSel));
       detail.innerHTML = projectDetailHtml(projSel);
       if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
     }
@@ -2922,6 +2950,54 @@
       }
       toast('Project saved');
     }).catch(function (err) { toast(err.message, true); busy(btn, false); });
+  }
+
+  // Pick + validate (format, ≤30s, ≤25MB) + upload a team pitch video to Drive.
+  var PROJ_VIDEO_MAX = 25 * 1024 * 1024;
+  function pickProjectVideo(slot, btn) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/mp4,video/webm,video/quicktime,video/ogg,video/*';
+    input.onchange = function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      var status = $('#projVideoStatus');
+      function setStatus(msg, isErr) { if (status) { status.textContent = msg; status.className = 'proj-vid-status' + (isErr ? ' err' : ''); } if (isErr) toast(msg, true); }
+      if (!/^video\//.test(file.type || '')) return setStatus('Please choose a video file (MP4 or WebM).', true);
+      if (file.size > PROJ_VIDEO_MAX) return setStatus('Video is ' + (file.size / 1024 / 1024).toFixed(1) + ' MB — must be under 25 MB.', true);
+      setStatus('Checking video…', false);
+      var url = URL.createObjectURL(file);
+      var probe = document.createElement('video');
+      probe.preload = 'metadata';
+      probe.onloadedmetadata = function () {
+        var dur = probe.duration;
+        URL.revokeObjectURL(url);
+        if (!isFinite(dur)) return setStatus('Could not read the video length. Try an MP4.', true);
+        if (dur > 30.5) return setStatus('Video is ' + Math.round(dur) + 's — must be 30 seconds or less.', true);
+        uploadProjectVideo(slot, file, btn, setStatus);
+      };
+      probe.onerror = function () { URL.revokeObjectURL(url); setStatus('Could not read that video. Try an MP4.', true); };
+      probe.src = url;
+    };
+    input.click();
+  }
+  function uploadProjectVideo(slot, file, btn, setStatus) {
+    busy(btn, true);
+    setStatus('Uploading… large clips can take a moment.', false);
+    var reader = new FileReader();
+    reader.onload = function () {
+      A.api('upload_project_video', { slot: slot, data: reader.result, filename: file.name.replace(/\.[^.]+$/, '') })
+        .then(function (r) {
+          if (r && r.teamProjects) { state.data.teamProjects = r.teamProjects; A.writeCache(state.data); }
+          busy(btn, false);
+          setStatus('', false);
+          renderProjectDetail(); // reflect "Video added" + it will loop once you save/close
+          toast('Video uploaded');
+        })
+        .catch(function (err) { busy(btn, false); setStatus(err.message || 'Upload failed', true); });
+    };
+    reader.onerror = function () { busy(btn, false); setStatus('Could not read the file.', true); };
+    reader.readAsDataURL(file);
   }
 
   function viewTools() {
@@ -4144,6 +4220,15 @@
         break;
       }
       case 'proj-cancel': projEdit = false; projEditColor = ''; renderProjectDetail(); break;
+      case 'proj-upload-video': pickProjectVideo(Number(t.getAttribute('data-slot')), t); break;
+      case 'proj-video-mute': {
+        var pv = $('#projDetail video');
+        if (pv) { pv.muted = !pv.muted; if (pv.muted) { /* keep it going */ } else { pv.play && pv.play(); }
+          var pi = t.querySelector('i'); if (pi) pi.className = pv.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+          t.setAttribute('title', pv.muted ? 'Unmute' : 'Mute');
+        }
+        break;
+      }
       case 'proj-save': saveProject(Number(t.getAttribute('data-slot')), t); break;
       case 'proj-close': closeProject(); break;
       case 'proj-nav': closeProject(); break; // let the profile link navigate

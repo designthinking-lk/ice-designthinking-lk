@@ -1506,12 +1506,39 @@ body.hive-full .project-switcher select { pointer-events: auto; }
    (its `left` is set inline from the measured grid geometry) */
 .proj-detail {
   position: absolute; top: 0; right: 0; bottom: 0; z-index: 40;
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
   box-shadow: 0 24px 64px -34px rgba(14, 15, 17, 0.45);
   animation: proj-detail-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .proj-detail[hidden] { display: none; }
+/* looping muted pitch video as the card background */
+.proj-d-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; background: #0b0d10; }
+.proj-d-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(to bottom, rgba(0,0,0,0.62), rgba(0,0,0,0.22) 42%, rgba(0,0,0,0.7)); }
+.proj-detail.has-video .proj-d-inner, .proj-detail.has-video .proj-d-footer { position: relative; z-index: 2; }
+.proj-detail .proj-close { z-index: 4; }
+.proj-detail.has-video .proj-close { background: rgba(0,0,0,0.42); color: #fff; border-color: rgba(255,255,255,0.3); }
+.proj-detail.has-video .proj-close:hover { background: rgba(0,0,0,0.62); color: #fff; }
+.proj-detail.has-video .proj-d-title { color: #fff; }
+.proj-detail.has-video .proj-d-desc { color: rgba(255,255,255,0.92); }
+.proj-detail.has-video .proj-d-footer { border-top-color: rgba(255,255,255,0.18); }
+.proj-detail.has-video .proj-d-footer .btn-outline { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.5); color: #fff; }
+.proj-detail.has-video .proj-d-footer .btn-outline:hover { background: rgba(255,255,255,0.22); border-color: #fff; color: #fff; }
+.proj-video-audio {
+  position: absolute; bottom: 16px; left: 16px; z-index: 4;
+  width: 38px; height: 38px; border-radius: 50%; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+  cursor: pointer; font-size: 14px; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  transition: background 0.15s;
+}
+.proj-video-audio:hover { background: rgba(0,0,0,0.66); }
+/* edit-form video controls */
+.proj-lbl-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-faint); }
+.proj-vid-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.proj-vid-ok { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--color-accent); }
+.proj-vid-status { font-size: 12.5px; color: var(--text-muted); min-height: 15px; margin-top: 6px; }
+.proj-vid-status.err { color: #d23; }
 /* team member circles below the stacked card (left column) */
 .proj-members-strip {
   position: absolute; z-index: 34; /* left/top/width set inline from geometry */
