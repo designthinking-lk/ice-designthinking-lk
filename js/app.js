@@ -2659,6 +2659,7 @@
   var projSel = null;      // open slot (null = grid)
   var projEdit = false;    // inline edit mode within the open panel
   var projEditColor = '';  // pending colour while editing
+  var projStack = [];      // slots front→back while a project is open (for flipping)
 
   function teamProjectsData() {
     var tp = state.data && state.data.teamProjects;
@@ -2744,6 +2745,31 @@
       '<div class="proj-d-inner">' + body + '</div>';
   }
 
+  function projCardMap() {
+    var grid = $('#projectsGrid'), m = {};
+    if (grid) Array.prototype.forEach.call(grid.querySelectorAll('.project-card'), function (c) { m[c.getAttribute('data-slot')] = c; });
+    return m;
+  }
+  function projFirstSlotPos() {
+    var s0 = String(teamProjectsData()[0].slot);
+    var c = projCardMap()[s0];
+    return c ? { l: c.offsetLeft, t: c.offsetTop } : { l: 0, t: 0 };
+  }
+  // Lay the cards out as a stack at the first slot in `order` (front→back).
+  // `skip` leaves one card untouched (mid-flip).
+  function applyStack(order, skip) {
+    var map = projCardMap(), pos = projFirstSlotPos();
+    order.forEach(function (slot, i) {
+      var c = map[String(slot)]; if (!c || c === skip) return;
+      var front = i === 0;
+      c.style.transform = 'translate(' + ((pos.l - c.offsetLeft) + i * 5) + 'px,' + ((pos.t - c.offsetTop) + i * 5) + 'px)' + (front ? '' : ' scale(0.985)');
+      c.style.zIndex = String(60 - i * 2);
+      c.classList.add('pc-stacked');
+      c.classList.toggle('pc-front', front);
+      c.classList.toggle('pc-behind', !front);
+    });
+  }
+
   // Fly every card onto the first slot (selected on top), freeing the rest of
   // the grid for the detail region.
   function openProject(slot, edit) {
@@ -2752,27 +2778,53 @@
     var cards = Array.prototype.slice.call(grid.querySelectorAll('.project-card'));
     if (!cards.length) return;
     projSel = slot; projEdit = !!edit; projEditColor = '';
-    var fL = cards[0].offsetLeft, fT = cards[0].offsetTop;
-    grid.classList.add('pp-open'); // enable the 0.52s transition BEFORE moving cards
-    var behind = 0;
-    cards.forEach(function (c) {
-      var s = Number(c.getAttribute('data-slot'));
-      var isSel = s === slot;
-      var extra = isSel ? 0 : (++behind) * 5;   // fan the stacked cards a touch
-      c.style.transform = 'translate(' + ((fL - c.offsetLeft) + extra) + 'px,' + ((fT - c.offsetTop) + extra) + 'px)' + (isSel ? '' : ' scale(0.985)');
-      c.style.zIndex = isSel ? 60 : (30 - behind);
-      c.classList.add('pc-stacked');
-      c.classList.toggle('pc-front', isSel);
-      c.classList.toggle('pc-behind', !isSel);
-    });
+    projStack = [slot].concat(teamProjectsData().map(function (p) { return p.slot; }).filter(function (s) { return s !== slot; }));
+    grid.classList.add('pp-open'); // enable the transition BEFORE moving cards
+    applyStack(projStack);
     // detail fills the freed area: to the right of the first slot (multi-column)
     // or below it (single column)
+    var fT = cards[0].offsetTop;
     var multiCol = cards.length > 1 && cards[1].offsetTop === fT;
     if (multiCol) { detail.style.left = cards[1].offsetLeft + 'px'; detail.style.top = '0'; }
     else { detail.style.left = '0'; detail.style.top = (fT + cards[0].offsetHeight + 26) + 'px'; }
     detail.hidden = false;
     detail.innerHTML = projectDetailHtml(slot);
     if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
+  }
+
+  // Deal the top card to the bottom of the deck (like flipping through cards),
+  // bringing the next project to the front. Looping.
+  var projFlipping = false;
+  function flipStack() {
+    if (projSel == null || projEdit || projStack.length < 2 || projFlipping) return;
+    projFlipping = true;
+    setTimeout(function () { projFlipping = false; }, 500);
+    var leaving = projCardMap()[String(projStack[0])];
+    var pos = projFirstSlotPos();
+    var backIdx = projStack.length - 1;
+    projStack = projStack.slice(1).concat(projStack[0]); // rotate front→back
+    projSel = projStack[0];
+    applyStack(projStack, leaving);   // advance the rest forward
+    if (leaving) {
+      var X = pos.l - leaving.offsetLeft, Y = pos.t - leaving.offsetTop;
+      leaving.classList.remove('pc-front'); leaving.classList.add('pc-behind');
+      leaving.style.zIndex = '70';
+      leaving.style.transition = 'transform 0.26s cubic-bezier(0.4, 0, 1, 1)';
+      leaving.style.transform = 'translate(' + X + 'px,' + (Y + 190) + 'px) scale(1.02)'; // slide down/out
+      setTimeout(function () {          // …then tuck into the back
+        leaving.style.transition = 'transform 0.36s cubic-bezier(0, 0, 0.2, 1)';
+        leaving.style.transform = 'translate(' + (X + backIdx * 5) + 'px,' + (Y + backIdx * 5) + 'px) scale(0.985)';
+        leaving.style.zIndex = String(60 - backIdx * 2);
+        setTimeout(function () { if (leaving) leaving.style.transition = ''; }, 380);
+      }, 260);
+    }
+    fadeDetail();
+  }
+  function fadeDetail() {
+    var d = $('#projDetail'); if (!d) return;
+    d.style.transition = 'opacity 0.18s ease';
+    d.style.opacity = '0';
+    setTimeout(function () { renderProjectDetail(); d.style.opacity = '1'; }, 180);
   }
   function renderProjectDetail() {
     var detail = $('#projDetail');
@@ -2791,11 +2843,11 @@
     }, 200);
     setTimeout(function () {                        // …then tidy up once settled
       Array.prototype.forEach.call(grid.querySelectorAll('.project-card'), function (c) {
-        c.style.zIndex = ''; c.classList.remove('pc-stacked', 'pc-front', 'pc-behind');
+        c.style.zIndex = ''; c.style.transition = ''; c.classList.remove('pc-stacked', 'pc-front', 'pc-behind');
       });
       grid.classList.remove('pp-open');
-      if (detail) { detail.hidden = true; detail.innerHTML = ''; detail.classList.remove('closing'); }
-      projSel = null; projEdit = false; projEditColor = '';
+      if (detail) { detail.hidden = true; detail.innerHTML = ''; detail.classList.remove('closing'); detail.style.opacity = ''; }
+      projSel = null; projEdit = false; projEditColor = ''; projStack = [];
     }, 760);
   }
   function saveProject(slot, btn) {
@@ -4027,7 +4079,12 @@
       case 'menu-nav': closeMenu(); break; // let the anchor navigate
       case 'wallet-show': showWalletFlyout(); break;
       case 'wallet-hide': hideWalletFlyout(); break;
-      case 'proj-open': openProject(Number(t.getAttribute('data-slot')), false); break;
+      case 'proj-open': {
+        var pslot = Number(t.getAttribute('data-slot'));
+        if (projSel == null) openProject(pslot, false);
+        else if (pslot === projSel && !projEdit) flipStack(); // click the top card to deal it under
+        break;
+      }
       case 'proj-edit': e.preventDefault(); e.stopPropagation(); openProject(Number(t.getAttribute('data-slot')), true); break;
       case 'proj-edit-inline': projEdit = true; projEditColor = ''; renderProjectDetail(); break;
       case 'proj-color': {

@@ -1499,6 +1499,7 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 .project-card.pc-stacked { box-shadow: 0 26px 60px -18px rgba(14, 15, 17, 0.6); }
 .project-card.pc-behind { pointer-events: none; }
 .projects-grid.pp-open .pc-edit { opacity: 0; pointer-events: none; }
+.projects-grid.pp-open .pc-front { cursor: pointer; } /* click the top card to deal it under */
 @media (prefers-reduced-motion: reduce) { .projects-grid.pp-open .project-card { transition: none; } }
 
 /* detail region — fills the freed area to the right of the stacked first slot
