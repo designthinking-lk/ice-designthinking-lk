@@ -1584,6 +1584,18 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 .proj-d-footer { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 14px 24px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 .proj-d-footer .proj-colors { margin: 0 auto 0 0; } /* colours on the left, actions pushed right */
 .proj-foot-actions { display: flex; gap: 10px; }
+/* view-mode footer: seamless (no divider), website left + edit icon right */
+.proj-d-footer-view { border-top: none; }
+.proj-d-footer-view .proj-d-web { margin-right: auto; }
+.proj-edit-btn {
+  flex: none; width: 38px; height: 38px; border-radius: 50%; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border-strong); color: var(--text);
+  cursor: pointer; font-size: 14px; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.proj-edit-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.proj-detail.has-video .proj-edit-btn { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.4); color: #fff; }
+.proj-detail.has-video .proj-edit-btn:hover { background: rgba(255, 255, 255, 0.24); border-color: #fff; color: #fff; }
 /* edit tabs */
 .proj-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
 .proj-tab { padding: 8px 14px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }

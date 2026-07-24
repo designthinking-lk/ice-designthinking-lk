@@ -2859,21 +2859,22 @@
       inner =
         '<h2 class="proj-d-title">' + esc(p.title) + '</h2>' +
         '<p class="proj-d-desc">' + esc(p.description) + '</p>' +
-        (p.fullDescription ? '<p class="proj-d-full">' + esc(p.fullDescription).replace(/\n/g, '<br>') + '</p>' : '') +
-        web;
-      footer = canEdit
-        ? '<button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button>'
-        : '';
+        (p.fullDescription ? '<p class="proj-d-full">' + esc(p.fullDescription).replace(/\n/g, '<br>') + '</p>' : '');
+      // website on the left of the footer, edit as an icon on the right
+      footer = web + (canEdit
+        ? '<button class="proj-edit-btn" type="button" data-action="proj-edit-inline" data-slot="' + slot + '" title="Edit project" aria-label="Edit project"><i class="fa-solid fa-pen"></i></button>'
+        : '');
     }
     var videoBg = projShowVideo(slot)
       ? '<video class="proj-d-video" autoplay muted loop playsinline preload="auto">' + projVideoSourcesHtml(p.video) + '</video>' +
         '<div class="proj-d-scrim"></div>' +
         '<button class="proj-video-audio" type="button" data-action="proj-video-mute" title="Unmute"><i class="fa-solid fa-volume-xmark"></i></button>'
       : '';
+    var footerCls = 'proj-d-footer' + (editing ? '' : ' proj-d-footer-view');
     return videoBg +
       '<button class="proj-close" type="button" data-action="proj-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
       '<div class="proj-d-inner">' + inner + '</div>' +
-      (footer ? '<div class="proj-d-footer">' + footer + '</div>' : '');
+      (footer ? '<div class="' + footerCls + '">' + footer + '</div>' : '');
   }
 
   function projCardMap() {
