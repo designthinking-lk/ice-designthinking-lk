@@ -1459,13 +1459,21 @@ body.hive-full .project-switcher select { pointer-events: auto; }
   font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
   background: rgba(255, 255, 255, 0.18); border-radius: 999px; padding: 3px 10px;
 }
-/* team credit chip, top-right of each project card */
+/* team credit chip — stacked under the PROJECT tag (top-left) so the top-right
+   corner is free for the QR */
 .pc-team {
-  position: absolute; top: 15px; right: 20px;
+  position: absolute; top: 44px; left: 20px;
   font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
   background: rgba(255, 255, 255, 0.9); color: #0E0F11;
   border-radius: 999px; padding: 3px 11px;
 }
+/* live QR to the project website, top-right of the card */
+.pc-qr {
+  position: absolute; top: 15px; right: 16px; z-index: 2; line-height: 0;
+  width: 56px; height: 56px; padding: 5px; box-sizing: border-box;
+  background: #fff; border-radius: 8px; box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.5);
+}
+.pc-qr img { display: block; width: 100%; height: auto; border-radius: 2px; }
 /* placeholder backdrops — one distinct duotone per card */
 .pc-1 { background: radial-gradient(120% 140% at 100% 0%, rgba(0, 215, 238, 0.55), transparent 55%), linear-gradient(221deg, #00D7EE, #6100FF); }
 .pc-2 { background: radial-gradient(120% 140% at 0% 0%, rgba(255, 255, 255, 0.22), transparent 50%), linear-gradient(215deg, #00C9A7, #005F73); }
@@ -1582,6 +1590,28 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 .proj-tab:hover { color: var(--text); }
 .proj-tab.on { color: var(--text); border-bottom-color: var(--color-accent); }
 .proj-vid-lead { margin: 0 0 16px; font-size: 13.5px; line-height: 1.55; color: var(--text-muted); }
+/* full description + website inputs */
+.proj-full-in, .proj-web-in {
+  width: 100%; box-sizing: border-box; font: inherit; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text);
+}
+.proj-full-in { margin-bottom: 16px; font-size: 14px; line-height: 1.5; resize: vertical; }
+.proj-full-in:focus, .proj-web-in:focus { outline: none; border-color: var(--color-accent); }
+.proj-web-row { display: flex; gap: 12px; align-items: stretch; margin-bottom: 6px; }
+.proj-web-in { flex: 1; min-width: 0; }
+.proj-qr-preview { flex: none; width: 46px; height: 46px; border-radius: 8px; box-sizing: border-box; padding: 4px; background: #fff; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
+.proj-qr-preview:empty { background: var(--bg-subtle); border-style: dashed; }
+.proj-qr-preview img { width: 100%; height: auto; display: block; }
+.proj-web-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; line-height: 1.5; }
+/* view: long description + website link (with broken-link warning) */
+.proj-d-full { margin: 0 0 18px; font-size: 14px; line-height: 1.65; color: var(--text-body); }
+.proj-d-web { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: var(--bg-subtle); border: 1px solid var(--border); font-size: 13.5px; font-weight: 600; color: var(--color-accent-dark); text-decoration: none; }
+.proj-d-web:hover { border-color: var(--color-accent); }
+.proj-d-web.broken { color: #a86500; background: rgba(240, 180, 0, 0.12); border-color: rgba(240, 180, 0, 0.5); }
+.proj-d-web.broken i { color: #e0a200; }
+.proj-detail.has-video .proj-d-full { color: rgba(255, 255, 255, 0.92); }
+.proj-detail.has-video .proj-d-web { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.35); color: #fff; }
+.proj-detail.has-video .proj-d-web.broken { background: rgba(240, 180, 0, 0.28); border-color: rgba(240, 180, 0, 0.7); color: #fff; }
 .proj-vid-remove { color: #b3261e; }
 .proj-vid-remove:hover { background: rgba(179, 38, 30, 0.08); }
 /* frozen while a save is in flight — no further input on the card */

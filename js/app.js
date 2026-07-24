@@ -2679,7 +2679,7 @@
   var projEditColor = '';  // pending colour while editing
   var projStack = [];      // slots front→back while a project is open (for flipping)
   var projEditTab = 'details';         // active edit tab: 'details' | 'video'
-  var projEditDraft = { title: '', description: '' }; // unsaved edits (survive tab switches)
+  var projEditDraft = { title: '', description: '', fullDescription: '', website: '' }; // unsaved edits
 
   function teamProjectsData() {
     var tp = state.data && state.data.teamProjects;
@@ -2708,10 +2708,12 @@
 
   function projectCardHtml(p) {
     var slot = p.slot;
+    var url = projCardUrl(p);
     return '<article class="project-card ' + projColorClass(p, slot) + '" data-action="proj-open" data-slot="' + slot + '" tabindex="0">' +
       '<span class="pc-tag">Project</span>' +
       '<span class="pc-team">' + esc(teamLabel(slot)) + '</span>' +
       (canEditProject(slot) ? '<button class="pc-edit" type="button" data-action="proj-edit" data-slot="' + slot + '" title="Edit your team’s project"><i class="fa-solid fa-pen"></i></button>' : '') +
+      (url ? '<div class="pc-qr" data-url="' + esc(url) + '" title="Scan for the project site"></div>' : '') +
       '<div class="pc-text"><h3>' + esc(p.title) + '</h3><p>' + esc(p.description) + '</p></div>' +
       '</article>';
   }
@@ -2770,6 +2772,28 @@
     var p = projectBySlot(slot);
     return !!(p && p.video) && !(projEdit && canEditProject(slot));
   }
+  function truthyStr(v) { return v === '1' || v === 1 || v === true || v === 'true'; }
+  function prettyUrl(u) { return String(u || '').replace(/^https?:\/\//i, '').replace(/\/$/, ''); }
+  function looksLikeUrl(u) { return /^https?:\/\/\S+\.\S+/i.test(u) || /^[\w-]+(\.[\w-]+)+/.test(u); }
+  // A valid, reachable project website → the card shows a live-generated QR.
+  function projCardUrl(p) { return (p && p.website && truthyStr(p.websiteOk)) ? p.website : ''; }
+  // Small client-side QR (qrcode lib); the container is sized by CSS.
+  function renderMiniQr_(el, text) {
+    if (!el) return;
+    try {
+      var qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+      el.innerHTML = qr.createImgTag(3, 1);
+      var img = el.querySelector('img');
+      if (img) { img.style.width = '100%'; img.style.height = 'auto'; img.style.display = 'block'; img.style.imageRendering = 'pixelated'; img.alt = 'Project QR'; }
+    } catch (e) { el.innerHTML = ''; }
+  }
+  // Render the QR onto every grid card that carries a valid website.
+  function renderProjectCardQRs() {
+    var grid = $('#projectsGrid'); if (!grid) return;
+    Array.prototype.forEach.call(grid.querySelectorAll('.pc-qr[data-url]'), function (el) {
+      renderMiniQr_(el, el.getAttribute('data-url'));
+    });
+  }
 
   // Detail region (right of the stack): a looping muted video background (when
   // uploaded) with title + description + inline edit, actions pinned in a footer.
@@ -2801,8 +2825,16 @@
         tabBody =
           '<label class="proj-lbl">Project title <span class="proj-lbl-hint">— one line</span></label>' +
           '<input class="proj-title-in" id="projTitleIn" maxlength="40" value="' + esc(projEditDraft.title) + '" placeholder="Project title">' +
-          '<label class="proj-lbl">Description <span class="proj-lbl-hint">— up to two lines</span></label>' +
-          '<textarea class="proj-desc-in" id="projDescIn" maxlength="105" rows="3" placeholder="One-line description">' + esc(projEditDraft.description) + '</textarea>';
+          '<label class="proj-lbl">Short description <span class="proj-lbl-hint">— shown on the card, two lines</span></label>' +
+          '<textarea class="proj-desc-in" id="projDescIn" maxlength="105" rows="2" placeholder="One-line pitch">' + esc(projEditDraft.description) + '</textarea>' +
+          '<label class="proj-lbl">Full description</label>' +
+          '<textarea class="proj-full-in" id="projFullIn" maxlength="600" rows="5" placeholder="Tell the story — the problem, your approach, what you built…">' + esc(projEditDraft.fullDescription) + '</textarea>' +
+          '<label class="proj-lbl">Project website</label>' +
+          '<div class="proj-web-row">' +
+            '<input class="proj-web-in" id="projWebIn" type="url" maxlength="300" value="' + esc(projEditDraft.website) + '" placeholder="https://your-project.com">' +
+            '<div class="proj-qr-preview" id="projQrPreview" title="Live QR preview"></div>' +
+          '</div>' +
+          '<div class="proj-web-hint">We’ll check the link when you save; a broken one still saves but shows a warning.</div>';
       }
       inner = tabs + '<div class="proj-tab-body">' + tabBody + '</div>';
       footer =
@@ -2815,9 +2847,18 @@
           '<button class="btn btn-gradient" type="button" data-action="proj-save" data-slot="' + slot + '"><span class="label">Save changes</span><span class="spin"></span></button>' +
         '</div>';
     } else {
+      var web = '';
+      if (p.website) {
+        var broken = !truthyStr(p.websiteOk);
+        web = '<a class="proj-d-web' + (broken ? ' broken' : '') + '" href="' + esc(p.website) + '" target="_blank" rel="noopener">' +
+          (broken ? '<i class="fa-solid fa-triangle-exclamation" title="This link looked broken when last saved"></i>' : '<i class="fa-solid fa-globe"></i>') +
+          '<span>' + esc(prettyUrl(p.website)) + '</span></a>';
+      }
       inner =
         '<h2 class="proj-d-title">' + esc(p.title) + '</h2>' +
-        '<p class="proj-d-desc">' + esc(p.description) + '</p>';
+        '<p class="proj-d-desc">' + esc(p.description) + '</p>' +
+        (p.fullDescription ? '<p class="proj-d-full">' + esc(p.fullDescription).replace(/\n/g, '<br>') + '</p>' : '') +
+        web;
       footer = canEdit
         ? '<button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button>'
         : '';
@@ -2941,14 +2982,31 @@
     var card = $('#projectsGrid .pc-front');
     var h3 = card && card.querySelector('.pc-text h3');
     var pp = card && card.querySelector('.pc-text p');
-    var ti = $('#projTitleIn'), de = $('#projDescIn');
+    var ti = $('#projTitleIn'), de = $('#projDescIn'), fu = $('#projFullIn'), we = $('#projWebIn');
     if (ti) ti.oninput = function () { projEditDraft.title = ti.value; if (h3) h3.textContent = ti.value || 'Untitled project'; };
     if (de) de.oninput = function () { projEditDraft.description = de.value; if (pp) pp.textContent = de.value; };
+    if (fu) fu.oninput = function () { projEditDraft.fullDescription = fu.value; };
+    if (we) {
+      var qp = $('#projQrPreview');
+      var paint = function () {
+        projEditDraft.website = we.value;
+        var v = we.value.trim();
+        var enc = v && !/^https?:\/\//i.test(v) ? 'https://' + v : v; // match what we save
+        if (qp) { if (looksLikeUrl(v)) renderMiniQr_(qp, enc); else qp.innerHTML = ''; }
+      };
+      we.oninput = paint; paint(); // live QR as they type
+    }
+  }
+  function captureProjectDraft() {
+    var ti = $('#projTitleIn'); if (ti) projEditDraft.title = ti.value;
+    var de = $('#projDescIn'); if (de) projEditDraft.description = de.value;
+    var fu = $('#projFullIn'); if (fu) projEditDraft.fullDescription = fu.value;
+    var we = $('#projWebIn'); if (we) projEditDraft.website = we.value;
   }
   function startProjectEdit(slot) {
-    var p = projectBySlot(slot) || { title: '', description: '' };
+    var p = projectBySlot(slot) || {};
     projEdit = true; projEditColor = ''; projEditTab = 'details';
-    projEditDraft = { title: p.title, description: p.description };
+    projEditDraft = { title: p.title || '', description: p.description || '', fullDescription: p.fullDescription || '', website: p.website || '' };
   }
   function closeProject() {
     var grid = $('#projectsGrid'), detail = $('#projDetail');
@@ -2971,10 +3029,7 @@
     }, 760);
   }
   function saveProject(slot, btn) {
-    // draft is kept live by wireProjectEditPreview, so it holds the latest values
-    // even if the Details tab isn't currently mounted.
-    var ti = $('#projTitleIn'); if (ti) projEditDraft.title = ti.value;
-    var de = $('#projDescIn'); if (de) projEditDraft.description = de.value;
+    captureProjectDraft(); // draft holds the latest values even off the Details tab
     if (!(projEditDraft.title || '').trim()) { projEditTab = 'details'; renderProjectDetail(); toast('Title cannot be empty.', true); return; }
     var detail = $('#projDetail');
     if (detail) detail.classList.add('proj-busy'); // freeze the whole card during the save
@@ -2982,22 +3037,31 @@
     A.api('team_project_update', {
       slot: slot, title: projEditDraft.title,
       description: projEditDraft.description,
+      fullDescription: projEditDraft.fullDescription,
+      website: projEditDraft.website,
       color: projEditColor || undefined,
     }).then(function (r) {
       if (r && r.teamProjects) { state.data.teamProjects = r.teamProjects; A.writeCache(state.data); }
       projEdit = false; projEditColor = '';
       renderProjectDetail();
       var d2 = $('#projDetail'); if (d2) d2.classList.remove('proj-busy');
-      // update the stacked front card's face in place (keep its transform)
+      // rebuild the stacked front card fully (title/desc/colour + QR presence),
+      // preserving its stack transform, then (re)draw its QR
       var np = projectBySlot(slot);
       var card = $('#projectsGrid .project-card[data-slot="' + slot + '"]');
       if (card && np) {
-        card.className = 'project-card ' + projColorClass(np, slot) + ' pc-stacked pc-front';
-        var h3 = card.querySelector('.pc-text h3'), pp = card.querySelector('.pc-text p');
-        if (h3) h3.textContent = np.title;
-        if (pp) pp.textContent = np.description;
+        var tf = card.style.transform, z = card.style.zIndex;
+        var tmp = document.createElement('div'); tmp.innerHTML = projectCardHtml(np);
+        var fresh = tmp.firstChild;
+        if (fresh) {
+          fresh.style.transform = tf; fresh.style.zIndex = z;
+          fresh.classList.add('pc-stacked', 'pc-front');
+          card.replaceWith(fresh);
+          renderProjectCardQRs();
+        }
       }
-      toast('Project saved');
+      if (!truthyStr(np.websiteOk) && np.website) toast('Saved — but that website looked broken.', true);
+      else toast('Project saved');
     }).catch(function (err) {
       toast(err.message, true); busy(btn, false);
       var d3 = $('#projDetail'); if (d3) d3.classList.remove('proj-busy');
@@ -4140,6 +4204,8 @@
     // wallet: profile QR panel + the phone's #/wallet handoff page
     if ($('#walletPanel')) initWalletPanel();
     if ($('#walletView')) initWalletHandoff();
+    // projects: draw the QR on any card with a valid website
+    if ($('#projectsGrid')) renderProjectCardQRs();
     // skill tag input
     var skillInput = $('#skillInput');
     if (skillInput) {
@@ -4264,9 +4330,7 @@
       case 'proj-edit': e.preventDefault(); e.stopPropagation(); openProject(Number(t.getAttribute('data-slot')), true); break;
       case 'proj-edit-inline': startProjectEdit(projSel); renderProjectDetail(); break;
       case 'proj-edit-tab': {
-        // capture any in-flight text edits before swapping tabs (draft persists)
-        var teI = $('#projTitleIn'); if (teI) projEditDraft.title = teI.value;
-        var deI = $('#projDescIn'); if (deI) projEditDraft.description = deI.value;
+        captureProjectDraft(); // keep in-flight edits before swapping tabs
         projEditTab = t.getAttribute('data-tab') || 'details';
         renderProjectDetail();
         break;
