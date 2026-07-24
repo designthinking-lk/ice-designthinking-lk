@@ -98,7 +98,10 @@ button { font-family: inherit; }
   width: 176px; flex: none;
   display: flex; flex-direction: column; gap: 22px;
   padding: 18px 16px 20px;
-  background: var(--surface);
+  /* transparent: the sidebar is positioned, so it paints above the main column —
+     a fill would clip the shadow a card casts toward this side. The .side-oct
+     octagon (below) supplies the only visible surface behind the nav. */
+  background: transparent;
   position: relative; overflow: hidden; /* clips the octagon's off-screen half */
 }
 
@@ -1211,9 +1214,8 @@ body.chat-open .chat-toggle { background: var(--color-accent-light); border-colo
 /* Component tweaks the shared tokens don't cover: the active nav pill is
    near-black, which vanishes against dark surfaces. */
 :root[data-theme="dark"] .search:focus-within { box-shadow: 0 0 0 3px rgba(144, 77, 255, 0.18); }
-/* side pane blends seamlessly into the page background at night (the app bar's
-   frosted band carries its own dark tint, so the topbar itself stays clear) */
-:root[data-theme="dark"] .sidebar { background: var(--bg); }
+/* side pane is transparent in both themes (see .sidebar) so it never clips a
+   card's shadow; the dark page background shows through unchanged at night. */
 
 /* ------------------------------------------------- chat & broadcasts pane */
 /* Floating chat button, bottom-right corner (news lives in its Broadcast tab) */
