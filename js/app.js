@@ -2701,77 +2701,102 @@
     projSel = null; projEdit = false; projEditColor = ''; // always render the grid state
     return '<div class="projects-wrap"><div class="projects-grid" id="projectsGrid">' +
       teamProjectsData().map(projectCardHtml).join('') +
-      '</div><div class="proj-stage" id="projStage" hidden></div></div>';
+      '<div class="proj-detail" id="projDetail" hidden></div>' +
+      '</div></div>';
   }
 
-  // The expanded panel (project view + inline edit) shown over the dimmed grid.
-  function projectPanelHtml(slot) {
+  // Content of the detail region (right of the stacked cards): members + inline
+  // edit. The stacked selected card itself is the visual "hero" (title/colour).
+  function projectDetailHtml(slot) {
     var p = projectBySlot(slot);
     if (!p) return '';
     var canEdit = canEditProject(slot);
     var editing = projEdit && canEdit;
-    var color = editing ? (projEditColor || projColorClass(p, slot)) : projColorClass(p, slot);
     var members = projectMembers(slot);
     var memberHtml = members.map(function (m) {
       return '<a class="proj-member" href="#/profile/' + esc(m.id) + '" data-action="proj-nav" title="' + esc(m.name) + '">' +
         avatar(m, 'avatar-sm') + '<span>' + esc(m.name) + '</span></a>';
     }).join('');
-    var hero = editing
-      ? '<input class="proj-title-in" id="projTitleIn" maxlength="80" value="' + esc(p.title) + '" placeholder="Project title">' +
-        '<textarea class="proj-desc-in" id="projDescIn" maxlength="300" rows="3" placeholder="One-line description">' + esc(p.description) + '</textarea>'
-      : '<h2>' + esc(p.title) + '</h2><p>' + esc(p.description) + '</p>';
-    var colorPicker = editing
-      ? '<div class="proj-colors">' + [1, 2, 3, 4, 5, 6].map(function (n) {
+    var body;
+    if (editing) {
+      var color = projEditColor || projColorClass(p, slot);
+      body =
+        '<label class="proj-lbl">Project title</label>' +
+        '<input class="proj-title-in" id="projTitleIn" maxlength="80" value="' + esc(p.title) + '" placeholder="Project title">' +
+        '<label class="proj-lbl">Description</label>' +
+        '<textarea class="proj-desc-in" id="projDescIn" maxlength="300" rows="3" placeholder="One-line description">' + esc(p.description) + '</textarea>' +
+        '<label class="proj-lbl">Card colour</label>' +
+        '<div class="proj-colors">' + [1, 2, 3, 4, 5, 6].map(function (n) {
           var c = 'pc-' + n;
           return '<button type="button" class="proj-swatch ' + c + (c === color ? ' on' : '') + '" data-action="proj-color" data-color="' + c + '" data-slot="' + slot + '" aria-label="Colour ' + n + '"></button>';
-        }).join('') + '</div>'
-      : '';
-    var actions = !canEdit ? '' : (editing
-      ? '<div class="proj-actions"><button class="btn btn-ghost" type="button" data-action="proj-cancel">Cancel</button>' +
-        '<button class="btn btn-gradient" type="button" data-action="proj-save" data-slot="' + slot + '"><span class="label">Save changes</span><span class="spin"></span></button></div>'
-      : '<div class="proj-actions"><button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button></div>');
-    return '<div class="proj-panel">' +
-      '<button class="proj-close" type="button" data-action="proj-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
-      '<div class="proj-hero ' + color + '">' +
-        '<span class="pc-tag">Project</span>' +
-        '<div class="proj-hero-text">' + hero + '</div>' + colorPicker +
-      '</div>' +
-      '<div class="proj-body">' +
+        }).join('') + '</div>' +
+        '<div class="proj-actions"><button class="btn btn-ghost" type="button" data-action="proj-cancel">Cancel</button>' +
+        '<button class="btn btn-gradient" type="button" data-action="proj-save" data-slot="' + slot + '"><span class="label">Save changes</span><span class="spin"></span></button></div>';
+    } else {
+      body =
+        '<h2 class="proj-d-title">' + esc(p.title) + '</h2>' +
+        '<p class="proj-d-desc">' + esc(p.description) + '</p>' +
         '<div class="proj-members-head"><i class="fa-solid fa-user-group"></i>' + esc(teamLabel(slot)) + ' · ' + members.length + ' member' + (members.length === 1 ? '' : 's') + '</div>' +
         (memberHtml ? '<div class="proj-members">' + memberHtml + '</div>' : '<p class="proj-empty">No members assigned to ' + esc(teamLabel(slot)) + ' yet.</p>') +
-        actions +
-      '</div>' +
-    '</div>';
+        (canEdit ? '<div class="proj-actions"><button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button></div>' : '');
+    }
+    return '<button class="proj-close" type="button" data-action="proj-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
+      '<div class="proj-d-inner">' + body + '</div>';
   }
 
+  // Fly every card onto the first slot (selected on top), freeing the rest of
+  // the grid for the detail region.
   function openProject(slot, edit) {
-    var grid = $('#projectsGrid'), stage = $('#projStage');
-    if (!grid || !stage) return;
+    var grid = $('#projectsGrid'), detail = $('#projDetail');
+    if (!grid || !detail || projSel != null) return;
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.project-card'));
+    if (!cards.length) return;
     projSel = slot; projEdit = !!edit; projEditColor = '';
-    grid.classList.add('pp-dim');
-    stage.hidden = false;
-    stage.innerHTML = projectPanelHtml(slot);
+    var fL = cards[0].offsetLeft, fT = cards[0].offsetTop;
+    grid.classList.add('pp-open'); // enable the 0.52s transition BEFORE moving cards
+    var behind = 0;
+    cards.forEach(function (c) {
+      var s = Number(c.getAttribute('data-slot'));
+      var isSel = s === slot;
+      var extra = isSel ? 0 : (++behind) * 5;   // fan the stacked cards a touch
+      c.style.transform = 'translate(' + ((fL - c.offsetLeft) + extra) + 'px,' + ((fT - c.offsetTop) + extra) + 'px)' + (isSel ? '' : ' scale(0.985)');
+      c.style.zIndex = isSel ? 60 : (30 - behind);
+      c.classList.add('pc-stacked');
+      c.classList.toggle('pc-front', isSel);
+      c.classList.toggle('pc-behind', !isSel);
+    });
+    // detail fills the freed area: to the right of the first slot (multi-column)
+    // or below it (single column)
+    var multiCol = cards.length > 1 && cards[1].offsetTop === fT;
+    if (multiCol) { detail.style.left = cards[1].offsetLeft + 'px'; detail.style.top = '0'; }
+    else { detail.style.left = '0'; detail.style.top = (fT + cards[0].offsetHeight + 26) + 'px'; }
+    detail.hidden = false;
+    detail.innerHTML = projectDetailHtml(slot);
     if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
   }
-  function renderProjectPanel() {
-    var stage = $('#projStage');
-    if (stage && projSel != null) {
-      stage.innerHTML = projectPanelHtml(projSel);
-      var panel = stage.querySelector('.proj-panel');
-      if (panel) panel.style.animation = 'none'; // in-place update: don't replay the open pop
+  function renderProjectDetail() {
+    var detail = $('#projDetail');
+    if (detail && projSel != null) {
+      detail.innerHTML = projectDetailHtml(projSel);
       if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
     }
   }
   function closeProject() {
-    var grid = $('#projectsGrid'), stage = $('#projStage');
-    if (!stage) { projSel = null; return; }
-    var panel = stage.querySelector('.proj-panel');
-    if (panel) panel.classList.add('closing'); // fade the content out first
-    if (grid) grid.classList.remove('pp-dim');  // cards glide back to place
-    setTimeout(function () {
-      stage.hidden = true; stage.innerHTML = '';
+    var grid = $('#projectsGrid'), detail = $('#projDetail');
+    if (!grid || projSel == null) { projSel = null; return; }
+    if (detail) detail.classList.add('closing'); // fade the content out first…
+    setTimeout(function () {                       // …then send the cards home
+      // clear only transforms — keep .pp-open so the 0.52s transition animates
+      Array.prototype.forEach.call(grid.querySelectorAll('.project-card'), function (c) { c.style.transform = ''; });
+    }, 200);
+    setTimeout(function () {                        // …then tidy up once settled
+      Array.prototype.forEach.call(grid.querySelectorAll('.project-card'), function (c) {
+        c.style.zIndex = ''; c.classList.remove('pc-stacked', 'pc-front', 'pc-behind');
+      });
+      grid.classList.remove('pp-open');
+      if (detail) { detail.hidden = true; detail.innerHTML = ''; detail.classList.remove('closing'); }
       projSel = null; projEdit = false; projEditColor = '';
-    }, 300);
+    }, 760);
   }
   function saveProject(slot, btn) {
     var titleEl = $('#projTitleIn'), descEl = $('#projDescIn');
@@ -2779,16 +2804,22 @@
     if (title !== undefined && !title.trim()) { toast('Title cannot be empty.', true); return; }
     busy(btn, true);
     A.api('team_project_update', {
-      slot: slot,
-      title: title,
+      slot: slot, title: title,
       description: descEl ? descEl.value : undefined,
       color: projEditColor || undefined,
     }).then(function (r) {
       if (r && r.teamProjects) { state.data.teamProjects = r.teamProjects; A.writeCache(state.data); }
       projEdit = false; projEditColor = '';
-      renderProjectPanel();
+      renderProjectDetail();
+      // update the stacked front card's face in place (keep its transform)
+      var np = projectBySlot(slot);
       var card = $('#projectsGrid .project-card[data-slot="' + slot + '"]');
-      if (card) { var tmp = document.createElement('div'); tmp.innerHTML = projectCardHtml(projectBySlot(slot)); if (tmp.firstChild) card.replaceWith(tmp.firstChild); }
+      if (card && np) {
+        card.className = 'project-card ' + projColorClass(np, slot) + ' pc-stacked pc-front';
+        var h3 = card.querySelector('.pc-text h3'), pp = card.querySelector('.pc-text p');
+        if (h3) h3.textContent = np.title;
+        if (pp) pp.textContent = np.description;
+      }
       toast('Project saved');
     }).catch(function (err) { toast(err.message, true); busy(btn, false); });
   }
@@ -3998,15 +4029,16 @@
       case 'wallet-hide': hideWalletFlyout(); break;
       case 'proj-open': openProject(Number(t.getAttribute('data-slot')), false); break;
       case 'proj-edit': e.preventDefault(); e.stopPropagation(); openProject(Number(t.getAttribute('data-slot')), true); break;
-      case 'proj-edit-inline': projEdit = true; projEditColor = ''; renderProjectPanel(); break;
+      case 'proj-edit-inline': projEdit = true; projEditColor = ''; renderProjectDetail(); break;
       case 'proj-color': {
         projEditColor = t.getAttribute('data-color');
-        var ph = $('#projStage .proj-hero'); if (ph) ph.className = 'proj-hero ' + projEditColor;
-        var sw = $('#projStage') ? $('#projStage').querySelectorAll('.proj-swatch') : [];
+        var fc = $('#projectsGrid .pc-front'); // live-preview on the stacked hero card
+        if (fc) fc.className = fc.className.replace(/pc-[1-6]/, projEditColor);
+        var sw = $('#projDetail') ? $('#projDetail').querySelectorAll('.proj-swatch') : [];
         Array.prototype.forEach.call(sw, function (s) { s.classList.toggle('on', s.getAttribute('data-color') === projEditColor); });
         break;
       }
-      case 'proj-cancel': projEdit = false; projEditColor = ''; renderProjectPanel(); break;
+      case 'proj-cancel': projEdit = false; projEditColor = ''; renderProjectDetail(); break;
       case 'proj-save': saveProject(Number(t.getAttribute('data-slot')), t); break;
       case 'proj-close': closeProject(); break;
       case 'proj-nav': closeProject(); break; // let the profile link navigate
