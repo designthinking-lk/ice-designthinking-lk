@@ -2723,7 +2723,7 @@
       '</div></div>';
   }
 
-  // Team member circles shown below the stacked card (left column).
+  // People circles + aggregated skills, shown below the stacked card.
   function projMembersStripHtml(slot) {
     var members = projectMembers(slot);
     var parts = members.filter(function (u) { return teamSlot(u) === 'participant'; });
@@ -2734,9 +2734,21 @@
     }
     var chips = '';
     for (var i = 0; i < TEAM_CAP.participant; i++) chips += circle(parts[i], 'participant');
-    chips += '<span class="pms-sep"></span>';
+    chips += '<span class="pms-sep" aria-hidden="true"></span>';
     for (var j = 0; j < TEAM_CAP.mentor; j++) chips += circle(ments[j], 'mentor');
-    return '<div class="pms-head">' + esc(teamLabel(slot)) + '</div><div class="pms-chips">' + chips + '</div>';
+    // aggregate every member's skills, with a per-skill count
+    var counts = {};
+    members.forEach(function (u) {
+      (u.skills || []).forEach(function (s) { s = String(s || '').trim(); if (s) counts[s] = (counts[s] || 0) + 1; });
+    });
+    var skills = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || a.localeCompare(b); });
+    var skillsHtml = skills.length
+      ? skills.map(function (s) { return '<span class="pms-skill">' + esc(s) + '<b>' + counts[s] + '</b></span>'; }).join('')
+      : '<span class="pms-none">No skills listed yet.</span>';
+    return '<div class="pms-head">People</div>' +
+      '<div class="pms-chips">' + chips + '</div>' +
+      '<div class="pms-head pms-head-2">Skills</div>' +
+      '<div class="pms-skills">' + skillsHtml + '</div>';
   }
   function renderMembersStrip() {
     var s = $('#projMembersStrip');
@@ -2768,10 +2780,10 @@
     if (editing) {
       var color = projEditColor || projColorClass(p, slot);
       inner =
-        '<label class="proj-lbl">Project title</label>' +
-        '<input class="proj-title-in" id="projTitleIn" maxlength="80" value="' + esc(p.title) + '" placeholder="Project title">' +
-        '<label class="proj-lbl">Description</label>' +
-        '<textarea class="proj-desc-in" id="projDescIn" maxlength="300" rows="3" placeholder="One-line description">' + esc(p.description) + '</textarea>' +
+        '<label class="proj-lbl">Project title <span class="proj-lbl-hint">— one line</span></label>' +
+        '<input class="proj-title-in" id="projTitleIn" maxlength="60" value="' + esc(p.title) + '" placeholder="Project title">' +
+        '<label class="proj-lbl">Description <span class="proj-lbl-hint">— up to two lines</span></label>' +
+        '<textarea class="proj-desc-in" id="projDescIn" maxlength="160" rows="3" placeholder="One-line description">' + esc(p.description) + '</textarea>' +
         '<label class="proj-lbl">Card colour</label>' +
         '<div class="proj-colors">' + [1, 2, 3, 4, 5, 6].map(function (n) {
           var c = 'pc-' + n;
@@ -2859,7 +2871,7 @@
       strip.hidden = false;
       strip.innerHTML = projMembersStripHtml(slot);
     }
-    if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
+    if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); wireProjectEditPreview(); }
   }
 
   // Deal the top card to the bottom of the deck (like flipping through cards),
@@ -2903,8 +2915,17 @@
     if (detail && projSel != null) {
       detail.classList.toggle('has-video', projShowVideo(projSel));
       detail.innerHTML = projectDetailHtml(projSel);
-      if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
+      if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); wireProjectEditPreview(); }
     }
+  }
+  // Live-preview title/description onto the stacked front card as the user types.
+  function wireProjectEditPreview() {
+    var card = $('#projectsGrid .pc-front');
+    if (!card) return;
+    var h3 = card.querySelector('.pc-text h3'), pp = card.querySelector('.pc-text p');
+    var ti = $('#projTitleIn'), de = $('#projDescIn');
+    if (ti && h3) ti.oninput = function () { h3.textContent = ti.value || 'Untitled project'; };
+    if (de && pp) de.oninput = function () { pp.textContent = de.value; };
   }
   function closeProject() {
     var grid = $('#projectsGrid'), detail = $('#projDetail');

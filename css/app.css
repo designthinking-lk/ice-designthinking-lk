@@ -1452,8 +1452,8 @@ body.hive-full .project-switcher select { pointer-events: auto; }
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 .project-card:hover { box-shadow: 0 26px 54px -18px rgba(14, 15, 17, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
-.project-card h3 { margin: 0 0 4px; font-size: 19px; color: #fff; letter-spacing: -0.01em; }
-.project-card p { margin: 0; font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.85); }
+.project-card h3 { margin: 0 0 4px; font-size: 19px; color: #fff; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-card p { margin: 0; font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.85); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .pc-tag {
   position: absolute; top: 15px; left: 20px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
@@ -1547,9 +1547,18 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 }
 .proj-members-strip[hidden] { display: none; }
 .pms-head { font-size: 13px; font-weight: 700; letter-spacing: 0.01em; color: var(--text); }
+.pms-head-2 { margin-top: 4px; }
 .pms-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.pms-avatar { display: block; border-radius: 50%; }
+/* inline-flex + block img so a filled circle is the same height as an empty
+   slot and every circle sits on one line */
+.pms-avatar { display: inline-flex; border-radius: 50%; }
 .pms-avatar .avatar { width: 38px; height: 38px; border: 2px solid var(--surface); box-shadow: 0 3px 10px -3px rgba(0, 0, 0, 0.45); }
+.pms-avatar img.avatar { display: block; } /* kill the inline descender so filled circles align with empty slots */
+/* aggregated skill chips with a per-skill count */
+.pms-skills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pms-skill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 6px 3px 11px; border-radius: 999px; background: var(--bg-subtle); border: 1px solid var(--border); font-size: 12px; font-weight: 500; color: var(--text); }
+.pms-skill b { font-size: 10.5px; font-weight: 700; color: #fff; background: var(--color-accent); border-radius: 999px; min-width: 17px; height: 17px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; }
+.pms-none { color: var(--text-muted); font-size: 12.5px; }
 /* empty (unfilled) team slots — dashed placeholder circles */
 .pms-slot {
   width: 38px; height: 38px; border-radius: 50%; box-sizing: border-box;
@@ -1557,7 +1566,7 @@ body.hive-full .project-switcher select { pointer-events: auto; }
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--text-faint); font-size: 13px;
 }
-.pms-sep { width: 8px; flex: none; } /* gap between the participant and mentor slots */
+.pms-sep { width: 1px; height: 28px; flex: none; align-self: center; background: var(--border-strong); margin: 0 5px; } /* vertical divider before the mentor slots */
 @keyframes proj-detail-in { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
 .proj-detail.closing { animation: proj-detail-out 0.2s ease forwards; }
 @keyframes proj-detail-out { to { opacity: 0; transform: translateX(16px); } }
