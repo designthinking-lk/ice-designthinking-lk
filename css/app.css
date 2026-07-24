@@ -1515,14 +1515,16 @@ body.hive-full .project-switcher select { pointer-events: auto; }
 /* team member circles below the stacked card (left column) */
 .proj-members-strip {
   position: absolute; z-index: 34; /* left/top/width set inline from geometry */
-  display: flex; flex-wrap: wrap; gap: 9px; align-content: flex-start;
+  display: flex; flex-direction: column; gap: 10px;
   animation: proj-detail-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .proj-members-strip[hidden] { display: none; }
+.pms-head { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.pms-chips { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
 .pms-avatar { display: block; border-radius: 50%; transition: transform 0.12s; }
 .pms-avatar .avatar { width: 42px; height: 42px; border: 2px solid var(--surface); box-shadow: 0 3px 10px -3px rgba(0, 0, 0, 0.45); }
 .pms-avatar:hover { transform: translateY(-3px); }
-.pms-empty { color: var(--text-muted); font-size: 13px; align-self: center; }
+.pms-empty { color: var(--text-muted); font-size: 13px; }
 @keyframes proj-detail-in { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
 .proj-detail.closing { animation: proj-detail-out 0.2s ease forwards; }
 @keyframes proj-detail-out { to { opacity: 0; transform: translateX(16px); } }

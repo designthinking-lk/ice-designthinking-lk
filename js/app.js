@@ -2706,13 +2706,11 @@
 
   function projectCardHtml(p) {
     var slot = p.slot;
-    var stack = projectMembers(slot).slice(0, 6).map(function (m) { return avatar(m, 'avatar-sm'); }).join('');
     return '<article class="project-card ' + projColorClass(p, slot) + '" data-action="proj-open" data-slot="' + slot + '" tabindex="0">' +
       '<span class="pc-tag">Project</span>' +
       '<span class="pc-team">' + esc(teamLabel(slot)) + '</span>' +
       (canEditProject(slot) ? '<button class="pc-edit" type="button" data-action="proj-edit" data-slot="' + slot + '" title="Edit your team’s project"><i class="fa-solid fa-pen"></i></button>' : '') +
       '<div class="pc-text"><h3>' + esc(p.title) + '</h3><p>' + esc(p.description) + '</p></div>' +
-      (stack ? '<div class="pc-members member-stack">' + stack + '</div>' : '') +
       '</article>';
   }
 
@@ -2728,10 +2726,12 @@
   // Team member circles shown below the stacked card (left column).
   function projMembersStripHtml(slot) {
     var members = projectMembers(slot);
-    if (!members.length) return '<span class="pms-empty">No members assigned to ' + esc(teamLabel(slot)) + ' yet.</span>';
-    return members.map(function (m) {
-      return '<a class="pms-avatar" href="#/profile/' + esc(m.id) + '" data-action="proj-nav" title="' + esc(m.name) + '">' + avatar(m, 'avatar-sm') + '</a>';
-    }).join('');
+    var chips = members.length
+      ? members.map(function (m) {
+          return '<a class="pms-avatar" href="#/profile/' + esc(m.id) + '" data-action="proj-nav" title="' + esc(m.name) + '">' + avatar(m, 'avatar-sm') + '</a>';
+        }).join('')
+      : '<span class="pms-empty">No members assigned to ' + esc(teamLabel(slot)) + ' yet.</span>';
+    return '<div class="pms-head">Team</div><div class="pms-chips">' + chips + '</div>';
   }
   function renderMembersStrip() {
     var s = $('#projMembersStrip');
