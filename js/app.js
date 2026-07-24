@@ -2720,26 +2720,35 @@
     projSel = null; projEdit = false; projEditColor = ''; // always render the grid state
     return '<div class="projects-wrap"><div class="projects-grid" id="projectsGrid">' +
       teamProjectsData().map(projectCardHtml).join('') +
+      '<div class="proj-members-strip" id="projMembersStrip" hidden></div>' +
       '<div class="proj-detail" id="projDetail" hidden></div>' +
       '</div></div>';
   }
 
-  // Content of the detail region (right of the stacked cards): members + inline
-  // edit. The stacked selected card itself is the visual "hero" (title/colour).
+  // Team member circles shown below the stacked card (left column).
+  function projMembersStripHtml(slot) {
+    var members = projectMembers(slot);
+    if (!members.length) return '<span class="pms-empty">No members assigned to ' + esc(teamLabel(slot)) + ' yet.</span>';
+    return members.map(function (m) {
+      return '<a class="pms-avatar" href="#/profile/' + esc(m.id) + '" data-action="proj-nav" title="' + esc(m.name) + '">' + avatar(m, 'avatar-sm') + '</a>';
+    }).join('');
+  }
+  function renderMembersStrip() {
+    var s = $('#projMembersStrip');
+    if (s && projSel != null) s.innerHTML = projMembersStripHtml(projSel);
+  }
+
+  // Detail region (right of the stack): title + description + inline edit, with
+  // the actions pinned in a footer. Members live in the strip below the card.
   function projectDetailHtml(slot) {
     var p = projectBySlot(slot);
     if (!p) return '';
     var canEdit = canEditProject(slot);
     var editing = projEdit && canEdit;
-    var members = projectMembers(slot);
-    var memberHtml = members.map(function (m) {
-      return '<a class="proj-member" href="#/profile/' + esc(m.id) + '" data-action="proj-nav" title="' + esc(m.name) + '">' +
-        avatar(m, 'avatar-sm') + '<span>' + esc(m.name) + '</span></a>';
-    }).join('');
-    var body;
+    var inner, footer;
     if (editing) {
       var color = projEditColor || projColorClass(p, slot);
-      body =
+      inner =
         '<label class="proj-lbl">Project title</label>' +
         '<input class="proj-title-in" id="projTitleIn" maxlength="80" value="' + esc(p.title) + '" placeholder="Project title">' +
         '<label class="proj-lbl">Description</label>' +
@@ -2748,19 +2757,21 @@
         '<div class="proj-colors">' + [1, 2, 3, 4, 5, 6].map(function (n) {
           var c = 'pc-' + n;
           return '<button type="button" class="proj-swatch ' + c + (c === color ? ' on' : '') + '" data-action="proj-color" data-color="' + c + '" data-slot="' + slot + '" aria-label="Colour ' + n + '"></button>';
-        }).join('') + '</div>' +
-        '<div class="proj-actions"><button class="btn btn-ghost" type="button" data-action="proj-cancel">Cancel</button>' +
-        '<button class="btn btn-gradient" type="button" data-action="proj-save" data-slot="' + slot + '"><span class="label">Save changes</span><span class="spin"></span></button></div>';
+        }).join('') + '</div>';
+      footer =
+        '<button class="btn btn-ghost" type="button" data-action="proj-cancel">Cancel</button>' +
+        '<button class="btn btn-gradient" type="button" data-action="proj-save" data-slot="' + slot + '"><span class="label">Save changes</span><span class="spin"></span></button>';
     } else {
-      body =
+      inner =
         '<h2 class="proj-d-title">' + esc(p.title) + '</h2>' +
-        '<p class="proj-d-desc">' + esc(p.description) + '</p>' +
-        '<div class="proj-members-head"><i class="fa-solid fa-user-group"></i>' + esc(teamLabel(slot)) + ' · ' + members.length + ' member' + (members.length === 1 ? '' : 's') + '</div>' +
-        (memberHtml ? '<div class="proj-members">' + memberHtml + '</div>' : '<p class="proj-empty">No members assigned to ' + esc(teamLabel(slot)) + ' yet.</p>') +
-        (canEdit ? '<div class="proj-actions"><button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button></div>' : '');
+        '<p class="proj-d-desc">' + esc(p.description) + '</p>';
+      footer = canEdit
+        ? '<button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button>'
+        : '';
     }
     return '<button class="proj-close" type="button" data-action="proj-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>' +
-      '<div class="proj-d-inner">' + body + '</div>';
+      '<div class="proj-d-inner">' + inner + '</div>' +
+      (footer ? '<div class="proj-d-footer">' + footer + '</div>' : '');
   }
 
   function projCardMap() {
@@ -2807,6 +2818,15 @@
     else { detail.style.left = '0'; detail.style.top = (fT + cards[0].offsetHeight + 26) + 'px'; }
     detail.hidden = false;
     detail.innerHTML = projectDetailHtml(slot);
+    // member circles below the stacked card (left column)
+    var strip = $('#projMembersStrip');
+    if (strip && multiCol) {
+      strip.style.left = cards[0].offsetLeft + 'px';
+      strip.style.top = (fT + cards[0].offsetHeight + 46) + 'px';
+      strip.style.width = cards[0].offsetWidth + 'px';
+      strip.hidden = false;
+      strip.innerHTML = projMembersStripHtml(slot);
+    }
     if (projEdit) { var ti = $('#projTitleIn'); if (ti) ti.focus(); }
   }
 
@@ -2839,10 +2859,12 @@
     fadeDetail();
   }
   function fadeDetail() {
-    var d = $('#projDetail'); if (!d) return;
-    d.style.transition = 'opacity 0.18s ease';
-    d.style.opacity = '0';
-    setTimeout(function () { renderProjectDetail(); d.style.opacity = '1'; }, 180);
+    var els = [$('#projDetail'), $('#projMembersStrip')];
+    els.forEach(function (el) { if (el) { el.style.transition = 'opacity 0.18s ease'; el.style.opacity = '0'; } });
+    setTimeout(function () {
+      renderProjectDetail(); renderMembersStrip();
+      els.forEach(function (el) { if (el) el.style.opacity = '1'; });
+    }, 180);
   }
   function renderProjectDetail() {
     var detail = $('#projDetail');
@@ -2854,7 +2876,9 @@
   function closeProject() {
     var grid = $('#projectsGrid'), detail = $('#projDetail');
     if (!grid || projSel == null) { projSel = null; return; }
+    var strip = $('#projMembersStrip');
     if (detail) detail.classList.add('closing'); // fade the content out first…
+    if (strip) { strip.style.transition = 'opacity 0.2s ease'; strip.style.opacity = '0'; }
     setTimeout(function () {                       // …then send the cards home
       // clear only transforms — keep .pp-open so the 0.52s transition animates
       Array.prototype.forEach.call(grid.querySelectorAll('.project-card'), function (c) { c.style.transform = ''; });
@@ -2865,6 +2889,7 @@
       });
       grid.classList.remove('pp-open');
       if (detail) { detail.hidden = true; detail.innerHTML = ''; detail.classList.remove('closing'); detail.style.opacity = ''; }
+      if (strip) { strip.hidden = true; strip.innerHTML = ''; strip.style.opacity = ''; strip.style.transition = ''; }
       projSel = null; projEdit = false; projEditColor = ''; projStack = [];
     }, 760);
   }
