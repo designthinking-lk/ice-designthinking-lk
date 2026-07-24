@@ -2679,7 +2679,7 @@
   var projEditColor = '';  // pending colour while editing
   var projStack = [];      // slots front→back while a project is open (for flipping)
   var projEditTab = 'details';         // active edit tab: 'details' | 'video'
-  var projEditDraft = { title: '', description: '', website: '' }; // unsaved edits
+  var projEditDraft = { title: '', description: '', fullDescription: '', website: '' }; // unsaved edits
 
   function teamProjectsData() {
     var tp = state.data && state.data.teamProjects;
@@ -2809,6 +2809,7 @@
       var tabs =
         '<div class="proj-tabs">' +
         '<button type="button" class="proj-tab' + (tab === 'details' ? ' on' : '') + '" data-action="proj-edit-tab" data-tab="details">Details</button>' +
+        '<button type="button" class="proj-tab' + (tab === 'about' ? ' on' : '') + '" data-action="proj-edit-tab" data-tab="about">About</button>' +
         '<button type="button" class="proj-tab' + (tab === 'video' ? ' on' : '') + '" data-action="proj-edit-tab" data-tab="video"><i class="fa-solid fa-video"></i>Video</button>' +
         '</div>';
       var tabBody;
@@ -2821,6 +2822,10 @@
           '</div>' +
           (p.video ? '<div class="proj-vid-ok"><i class="fa-solid fa-circle-check"></i>Video added — it loops on the card.</div>' : '') +
           '<div class="proj-vid-status" id="projVideoStatus"></div>';
+      } else if (tab === 'about') {
+        tabBody =
+          '<p class="proj-vid-lead">A longer write-up — shown under the short description when the card is open.</p>' +
+          '<textarea class="proj-full-in" id="projFullIn" maxlength="600" rows="9" placeholder="Tell the story — the problem, your approach, what you built…">' + esc(projEditDraft.fullDescription) + '</textarea>';
       } else {
         tabBody =
           '<label class="proj-lbl">Project title <span class="proj-lbl-hint">— one line</span></label>' +
@@ -2831,8 +2836,7 @@
           '<div class="proj-web-row">' +
             '<input class="proj-web-in" id="projWebIn" type="url" maxlength="300" value="' + esc(projEditDraft.website) + '" placeholder="https://your-project.com">' +
             '<div class="proj-qr-preview" id="projQrPreview" title="Live QR preview"></div>' +
-          '</div>' +
-          '<div class="proj-web-hint">We’ll check the link when you save; a broken one still saves but shows a warning.</div>';
+          '</div>';
       }
       inner = tabs + '<div class="proj-tab-body">' + tabBody + '</div>';
       footer =
@@ -2855,6 +2859,7 @@
       inner =
         '<h2 class="proj-d-title">' + esc(p.title) + '</h2>' +
         '<p class="proj-d-desc">' + esc(p.description) + '</p>' +
+        (p.fullDescription ? '<p class="proj-d-full">' + esc(p.fullDescription).replace(/\n/g, '<br>') + '</p>' : '') +
         web;
       footer = canEdit
         ? '<button class="btn btn-outline" type="button" data-action="proj-edit-inline" data-slot="' + slot + '"><i class="fa-solid fa-pen"></i>Edit project</button>'
@@ -2979,9 +2984,10 @@
     var card = $('#projectsGrid .pc-front');
     var h3 = card && card.querySelector('.pc-text h3');
     var pp = card && card.querySelector('.pc-text p');
-    var ti = $('#projTitleIn'), de = $('#projDescIn'), we = $('#projWebIn');
+    var ti = $('#projTitleIn'), de = $('#projDescIn'), fu = $('#projFullIn'), we = $('#projWebIn');
     if (ti) ti.oninput = function () { projEditDraft.title = ti.value; if (h3) h3.textContent = ti.value || 'Untitled project'; };
     if (de) de.oninput = function () { projEditDraft.description = de.value; if (pp) pp.textContent = de.value; };
+    if (fu) fu.oninput = function () { projEditDraft.fullDescription = fu.value; };
     if (we) {
       var qp = $('#projQrPreview');
       var paint = function () {
@@ -2996,12 +3002,13 @@
   function captureProjectDraft() {
     var ti = $('#projTitleIn'); if (ti) projEditDraft.title = ti.value;
     var de = $('#projDescIn'); if (de) projEditDraft.description = de.value;
+    var fu = $('#projFullIn'); if (fu) projEditDraft.fullDescription = fu.value;
     var we = $('#projWebIn'); if (we) projEditDraft.website = we.value;
   }
   function startProjectEdit(slot) {
     var p = projectBySlot(slot) || {};
     projEdit = true; projEditColor = ''; projEditTab = 'details';
-    projEditDraft = { title: p.title || '', description: p.description || '', website: p.website || '' };
+    projEditDraft = { title: p.title || '', description: p.description || '', fullDescription: p.fullDescription || '', website: p.website || '' };
   }
   function closeProject() {
     var grid = $('#projectsGrid'), detail = $('#projDetail');
@@ -3032,6 +3039,7 @@
     A.api('team_project_update', {
       slot: slot, title: projEditDraft.title,
       description: projEditDraft.description,
+      fullDescription: projEditDraft.fullDescription,
       website: projEditDraft.website,
       color: projEditColor || undefined,
     }).then(function (r) {
